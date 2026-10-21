@@ -1,5 +1,6 @@
 // Escrituras del catálogo. Requiere la variable ADMIN_PASSWORD en Vercel.
-const crypto = require('node:crypto');
+// Comparación en tiempo constante (sin módulos de Node, para que corra en Cloudflare)
+const iguales = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
 const fallos = new Map();   // ip -> { n, hasta }   (en memoria: frena la fuerza bruta, pero cada instancia de Vercel lleva su propia cuenta)
 module.exports = async (req, res) => {
   const E = process.env;
@@ -7,7 +8,7 @@ module.exports = async (req, res) => {
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x', f = fallos.get(ip) || { n: 0, hasta: 0 };
   if (f.hasta > Date.now()) return res.status(429).json({ error: 'Demasiados intentos. Esperá unos minutos.' });
   const pw = String(req.headers['x-admin-password'] || ''), real = E.ADMIN_PASSWORD || '';
-  const ok = real && pw.length === real.length && crypto.timingSafeEqual(Buffer.from(pw), Buffer.from(real));
+  const ok = real && pw.length === real.length && iguales(pw, real);
   if (!ok) { f.n += 1; if (f.n >= 5) { f.n = 0; f.hasta = Date.now() + 15 * 60 * 1000; } fallos.set(ip, f); await new Promise(r => setTimeout(r, 800)); return res.status(401).json({ error: 'Contraseña incorrecta.' }); }
   fallos.delete(ip);
   const H = { apikey: E.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${E.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
