@@ -5,12 +5,12 @@ window.CONFIG = {
   WHATSAPP: '543754400392',            // formato internacional sin + ni espacios
   CITY: 'Puerto Iguazú, Misiones, Argentina',
   ADDRESS: '',                          // completar con la dirección exacta: el mapa se actualiza solo
-  HOURS: 'Lunes a Viernes de 10 a 18:30 hs',
-  EMAIL: '',
+  HOURS: 'Lunes a Viernes de 08 a 20:30 hs',
+  EMAIL: 'maximelectronic1@gmail.com',
   ANNOUNCEMENT: 'Comprá online con tu cuenta | Envíos a todo el país (el costo lo paga el comprador)',
   STOCK_NOTICE: 'TODO PRODUCTO PUBLICADO ESTÁ EN STOCK · No hace falta consultar disponibilidad',   // cartel de arriba de todo
   CARRIERS_TEXT: 'Correo Argentino y Andreani',   // se usa en las preguntas frecuentes
-  SOCIAL: { instagram: '', facebook: '', tiktok: '', youtube: '', linkedin: '' }, // pegá cada link acá
+  SOCIAL: { instagram: 'https://www.instagram.com/digidots_3d/', facebook: '', tiktok: '', youtube: '', linkedin: '' }, // pegá cada link acá
   // Medios de pago visibles en el checkout. Ualá solo funciona si cargaste sus variables en Vercel.
   PAYMENTS: { uala: true, mercadopago: false, transferencia: false },   // transferencia es manual (hay que confirmarla a mano): apagada
   // Carrusel del inicio. prod = productos con foto que se muestran en ese slide: 'destacados', 'ofertas', el nombre de una categoría (ej. 'Drones') o una lista de SKUs (['EJ-001','EJ-009']). Se toman de las fotos cargadas en el Excel (imagen_principal).
