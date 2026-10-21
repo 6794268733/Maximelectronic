@@ -1,5 +1,5 @@
 // Escrituras del catálogo. Requiere la variable ADMIN_PASSWORD en Vercel.
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const fallos = new Map();   // ip -> { n, hasta }   (en memoria: frena la fuerza bruta, pero cada instancia de Vercel lleva su propia cuenta)
 module.exports = async (req, res) => {
   const E = process.env;
