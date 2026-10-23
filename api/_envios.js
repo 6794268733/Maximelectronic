@@ -57,6 +57,7 @@ const correo = {
       dimensions: { weight: k.peso_g, height: k.alto, width: k.ancho, length: k.largo } });   // sin deliveredType: devuelve domicilio (D) y sucursal (S)
     const go = async f => http(`${this.base()}/rates`, { method: 'POST', headers: { Authorization: 'Bearer ' + await this.token(f), 'Content-Type': 'application/json' }, body });
     let r = await go(false); if (r.status === 401) r = await go(true);
+    console.log('correo rates:', r.status, (await r.clone().text()).slice(0, 500));
     if (!r.ok) throw new Error('rates ' + r.status);
     const j = await r.json();
     return (j.rates || []).filter(x => Number(x.price) > 0).map(x => ({
