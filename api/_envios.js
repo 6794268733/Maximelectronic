@@ -8,6 +8,7 @@
 //  Vía Cargo: no tiene API pública documentada; se agrega acá como un módulo más cuando la habilite.
 const E = new Proxy({}, { get: (_, k) => process.env[k] });   // lee las variables al usarlas (Cloudflare las entrega en cada pedido)
 const pub = m => Object.assign(new Error(m), { publico: true });
+const b64 = s => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
 const DEF = { peso_g: 1000, alto_cm: 10, ancho_cm: 20, largo_cm: 30 };   // se usa solo si el producto no tiene medidas cargadas
 
 async function http(url, opts = {}, ms = 9000) {
@@ -45,22 +46,32 @@ const correo = {
   tok: null,
   async token(forzar) {
     if (!forzar && this.tok && this.tok.hasta > Date.now()) return this.tok.v;
-    const r = await http(`${this.base()}/token`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`${E.CORREO_USER}:${E.CORREO_PASSWORD}`).toString('base64') } });
-    if (!r.ok) throw new Error('login ' + r.status);
-    const j = await r.json(); if (!j.token) throw new Error('sin token');
-    this.tok = { v: j.token, hasta: Date.now() + 10 * 60 * 1000 };   // se renueva cada 10 min
+    const cred = `${String(E.CORREO_USER).trim()}:${String(E.CORREO_PASSWORD).trim()}`;
+    const r = await http(`${this.base()}/token`, { method: 'POST', headers: { Authorization: 'Basic ' + b64(cred) } });
+    const txt = await r.text();
+    if (!r.ok) throw new Error('login ' + r.status + ' ' + txt.slice(0, 200));
+    let j = {}; try { j = JSON.parse(txt); } catch (e) {}
+    if (!j.token) throw new Error('sin token: ' + txt.slice(0, 200));
+    this.tok = { v: j.token, hasta: Date.now() + 10 * 60 * 1000 };
     return j.token;
   },
   async cotizar(cp, k) {
-    if (k.peso_g > 25000 || k.alto > 150 || k.ancho > 150 || k.largo > 150) throw new Error('el paquete supera el máximo (25 kg / 150 cm)');
-    const body = JSON.stringify({ customerId: E.CORREO_CUSTOMER_ID, postalCodeOrigin: String(E.ENVIO_CP_ORIGEN || '3370'), postalCodeDestination: String(cp),
-      dimensions: { weight: k.peso_g, height: k.alto, width: k.ancho, length: k.largo } });   // sin deliveredType: devuelve domicilio (D) y sucursal (S)
+    if (k.peso_g > 50000 || k.alto > 200 || k.ancho > 200 || k.largo > 200 || k.alto + k.ancho + k.largo > 300)
+      throw new Error(`paquete fuera de limites: ${k.peso_g} g, ${k.alto}x${k.ancho}x${k.largo} cm`);
+    const body = JSON.stringify({
+      customerId: String(E.CORREO_CUSTOMER_ID).trim(),
+      postalCodeOrigin: String(E.ENVIO_CP_ORIGEN || '3370'),
+      postalCodeDestination: String(cp),
+      dimensions: { weight: k.peso_g, height: k.alto, width: k.ancho, length: k.largo }
+    });
     const go = async f => http(`${this.base()}/rates`, { method: 'POST', headers: { Authorization: 'Bearer ' + await this.token(f), 'Content-Type': 'application/json' }, body });
     let r = await go(false); if (r.status === 401) r = await go(true);
-    console.log('correo rates:', r.status, (await r.clone().text()).slice(0, 500));
-    if (!r.ok) throw new Error('rates ' + r.status);
-    const j = await r.json();
-    return (j.rates || []).filter(x => Number(x.price) > 0).map(x => ({
+    const txt = await r.text();
+    if (!r.ok) throw new Error('rates ' + r.status + ' ' + txt.slice(0, 300));
+    let j; try { j = JSON.parse(txt); } catch (e) { throw new Error('rates no JSON: ' + txt.slice(0, 200)); }
+    const lista = (j.rates || []).filter(x => Number(x.price) > 0);
+    if (!lista.length) throw new Error('rates sin tarifas: ' + txt.slice(0, 300));
+    return lista.map(x => ({
       id: `correo:${x.deliveredType}:${String(x.productType || '').replace(/[^\w-]/g, '')}`, carrier: this.nombre, servicio: x.productName || 'Correo Argentino',
       modo: x.deliveredType === 'D' ? 'domicilio' : 'sucursal', precio: Math.ceil(Number(x.price))
     }));
@@ -75,7 +86,7 @@ const andreani = {
   tok: null,
   async token(forzar) {
     if (!forzar && this.tok && this.tok.hasta > Date.now()) return this.tok.v;
-    const r = await http(`${this.base()}/login`, { headers: { Authorization: 'Basic ' + Buffer.from(`${E.ANDREANI_USER}:${E.ANDREANI_PASSWORD}`).toString('base64') } });
+    const r = await http(`${this.base()}/login`, { headers: { Authorization: 'Basic ' + b64(`${E.ANDREANI_USER}:${E.ANDREANI_PASSWORD}`) } });
     if (!r.ok) throw new Error('login ' + r.status);
     let v = r.headers.get('x-authorization-token');
     if (!v) { const j = await r.json().catch(() => ({})); v = j.token; }
