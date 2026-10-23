@@ -112,12 +112,14 @@ async function cotizar(cp, items) {
   const limpios = items.map(i => ({ sku: String(i.sku || ''), qty: parseInt(i.qty, 10) }));
   if (limpios.some(i => !i.sku || !(i.qty > 0) || i.qty > 50)) throw pub('Cantidad inválida.');
   const activos = TRANSPORTES.filter(t => t.activo());
+  console.log('envio activos:', activos.map(t => t.nombre).join(',') || 'ninguno');
   if (!activos.length) return { opciones: [], errores: [], configurados: 0 };
   const k = paquete(limpios, await productos([...new Set(limpios.map(i => i.sku))]));
   const rs = await Promise.allSettled(activos.map(t => t.cotizar(cp, k)));
   const opciones = [], errores = [];
   rs.forEach((r, i) => r.status === 'fulfilled' ? opciones.push(...r.value) : errores.push({ carrier: activos[i].nombre, motivo: String(r.reason && r.reason.message || r.reason) }));
   errores.forEach(e => console.error('Error de envío:', e.carrier, e.motivo));
+  console.log('envio resultado:', opciones.length, 'opciones', JSON.stringify(errores));
   opciones.sort((a, b) => a.precio - b.precio);
   return { opciones, errores, configurados: activos.length };
 }
