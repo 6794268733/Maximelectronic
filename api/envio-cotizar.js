@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     if (!opciones.length) mensaje = r.configurados
       ? 'No pudimos calcular el envío para ese código postal. Revisalo o probá de nuevo en unos minutos.'
       : 'El cálculo de envío todavía no está configurado.';
-    return res.status(200).json({ opciones, mensaje });
+    return res.status(200).json({ opciones, mensaje, diag: r.errores });
   } catch (e) {
     return e.publico ? res.status(400).json({ error: e.message }) : res.status(500).json({ error: 'No se pudo calcular el envío. Intentá de nuevo.' });
   }
