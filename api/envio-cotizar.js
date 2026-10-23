@@ -20,3 +20,4 @@ module.exports = async (req, res) => {
     return e.publico ? res.status(400).json({ error: e.message }) : res.status(500).json({ error: 'No se pudo calcular el envío. Intentá de nuevo.' });
   }
 };
+
