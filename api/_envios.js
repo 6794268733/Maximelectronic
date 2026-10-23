@@ -117,6 +117,7 @@ async function cotizar(cp, items) {
   const rs = await Promise.allSettled(activos.map(t => t.cotizar(cp, k)));
   const opciones = [], errores = [];
   rs.forEach((r, i) => r.status === 'fulfilled' ? opciones.push(...r.value) : errores.push({ carrier: activos[i].nombre, motivo: String(r.reason && r.reason.message || r.reason) }));
+  errores.forEach(e => console.error('Error de envío:', e.carrier, e.motivo));
   opciones.sort((a, b) => a.precio - b.precio);
   return { opciones, errores, configurados: activos.length };
 }
