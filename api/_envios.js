@@ -49,7 +49,7 @@ const correo = {
     const cred = `${String(E.CORREO_USER).trim()}:${String(E.CORREO_PASSWORD).trim()}`;
     const r = await http(`${this.base()}/token`, { method: 'POST', headers: { Authorization: 'Basic ' + b64(cred) } });
     const txt = await r.text();
-    if (!r.ok) throw new Error('login ' + r.status + ' ' + txt.slice(0, 200));
+    if (!r.ok) throw new Error('login ' + r.status + ' ' + txt.slice(0, 200) + ' | url=' + this.base() + ' | largo usuario=' + String(E.CORREO_USER).trim().length + ' clave=' + String(E.CORREO_PASSWORD).trim().length);
     let j = {}; try { j = JSON.parse(txt); } catch (e) {}
     if (!j.token) throw new Error('sin token: ' + txt.slice(0, 200));
     this.tok = { v: j.token, hasta: Date.now() + 10 * 60 * 1000 };
