@@ -66,6 +66,7 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 
 **Probar antes de vender:** estas integraciones se probaron solo con respuestas simuladas. Con tus credenciales, cotizá un código postal real y compará el precio con el cotizador de la web de cada empresa. El código de Andreani sigue el formato publicado en fuentes secundarias y en su guía de autenticación; confirmalo contra su documentación oficial.
 **Qué no hace (todavía):** no genera la etiqueta ni el envío en Correo Argentino/Andreani. Cuando entra un pedido pagado, el envío se carga a mano en MiCorreo o en Andreani; el pedido guarda transportista, servicio, costo y la sucursal elegida (si el cliente la indicó).
+ok
 
 ## Cómo funciona el stock
 - Cada pedido descuenta el stock en el momento (aunque todavía no esté pagado).
