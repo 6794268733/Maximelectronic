@@ -13,7 +13,8 @@ module.exports = async (req, res) => {
   fallos.delete(ip);
   const H = { apikey: E.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${E.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
   const T = `${E.SUPABASE_URL}/rest/v1/productos`;
-  const { accion, rows, sku, stock, mantenerStock } = req.body || {};
+  const { accion, rows, sku, stock, mantenerStock, numero, estado, id } = req.body || {};
+  const P = `${E.SUPABASE_URL}/rest/v1/pedidos`, R = `${E.SUPABASE_URL}/rest/v1/resenas`;
   const clean = r => ({
     sku: String(r.sku || '').trim(), nombre: String(r.nombre || '').trim(), categoria: r.categoria || '', marca: r.marca || '',
     descripcion: r.descripcion || '', especificaciones: r.especificaciones || '',
@@ -49,6 +50,42 @@ module.exports = async (req, res) => {
     if (accion === 'eliminar') {
       const r = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}`, { method: 'DELETE', headers: H });
       return r.ok ? res.status(200).json({ ok: true }) : res.status(500).json({ error: 'No se pudo eliminar.' });
+    }
+    // ---- Pedidos: lista de los pagados / enviados / entregados y cambio de estado ----
+    if (accion === 'pedidos') {
+      const r = await fetch(`${P}?select=numero,nombre,email,telefono,items,total,envio,metodo,estado,creado&or=(estado.in.(pagado,enviado,entregado),and(estado.eq.pendiente,metodo.eq.transferencia))&order=creado.desc&limit=100`, { headers: H });
+      return r.ok ? res.status(200).json({ ok: true, pedidos: await r.json() }) : res.status(500).json({ error: 'No se pudieron leer los pedidos.' });
+    }
+    if (accion === 'pedido_estado') {
+      const n = parseInt(numero, 10);
+      // pagado: solo transferencias pendientes (confirmación manual). enviado / entregado: pedidos ya pagados.
+      const regla = { pagado: 'estado=eq.pendiente&metodo=eq.transferencia', enviado: 'estado=eq.pagado', entregado: 'estado=in.(pagado,enviado)' }[estado];
+      if (!regla || !n) return res.status(400).json({ error: 'Datos inválidos.' });
+      const r = await fetch(`${P}?numero=eq.${n}&${regla}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify({ estado }) });
+      if (!r.ok) return res.status(500).json({ error: 'No se pudo cambiar el estado.' });
+      const filas = await r.json();
+      if (!filas.length) return res.status(409).json({ error: 'El pedido no estaba en un estado que permita ese cambio.' });
+      if (estado === 'pagado') { try { await require('./_mail').comprobante(filas[0]); } catch (e) { /* el mail es secundario */ } }
+      return res.status(200).json({ ok: true });
+    }
+    // ---- Foto del domicilio: enlace temporal (10 minutos) ----
+    if (accion === 'foto_url') {
+      const n = parseInt(numero, 10);
+      const r = await fetch(`${P}?numero=eq.${n}&select=envio`, { headers: H });
+      const f = r.ok ? (((await r.json())[0] || {}).envio || {}).foto : '';
+      if (!/^MX-\d{5,}\.jpg$/.test(String(f || ''))) return res.status(404).json({ error: 'Este pedido no tiene foto.' });
+      const url = await require('./_foto').url(f, 600);
+      return url ? res.status(200).json({ ok: true, url }) : res.status(502).json({ error: 'No se pudo abrir la foto.' });
+    }
+    // ---- Reseñas: lista y moderación ----
+    if (accion === 'resenas') {
+      const r = await fetch(`${R}?select=id,pedido_numero,sku,nombre,estrellas,comentario,estado,creado&order=creado.desc&limit=200`, { headers: H });
+      return r.ok ? res.status(200).json({ ok: true, resenas: await r.json() }) : res.status(500).json({ error: 'No se pudieron leer las reseñas.' });
+    }
+    if (accion === 'resena_estado') {
+      if (!/^[0-9a-f-]{36}$/i.test(String(id || '')) || !['publicada', 'oculta', 'pendiente'].includes(estado)) return res.status(400).json({ error: 'Datos inválidos.' });
+      const r = await fetch(`${R}?id=eq.${id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ estado }) });
+      return r.ok ? res.status(200).json({ ok: true }) : res.status(500).json({ error: 'No se pudo actualizar la reseña.' });
     }
     return res.status(400).json({ error: 'Acción desconocida.' });
   } catch (e) { return res.status(500).json({ error: 'Error del servidor.' }); }

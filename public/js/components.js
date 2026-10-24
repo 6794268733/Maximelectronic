@@ -1,7 +1,7 @@
 const C = {};
 C.slides = CONFIG.SLIDES;   // se editan en js/config.js
 C.pages = {
-  faq: ['Preguntas frecuentes', [['¿Hacen envíos a todo el país?', 'Sí, enviamos a toda la Argentina con ' + CONFIG.CARRIERS_TEXT + ', a domicilio o a sucursal.'], ['¿Cuánto cuesta el envío?', 'El costo lo paga el comprador. Se calcula automáticamente con tu código postal antes de pagar, con la tarifa vigente de cada empresa.'], ['¿Tienen stock?', 'Sí. Todo producto publicado en la tienda está en stock.'], ['¿Qué medios de pago aceptan?', 'Tarjetas Visa, Mastercard, American Express, Cabal y Naranja.'], ['¿Tienen garantía?', 'Todos los productos tienen garantía oficial del fabricante.']]],
+  faq: ['Preguntas frecuentes', [['¿Hacen envíos a todo el país?', 'Sí, enviamos a toda la Argentina con ' + CONFIG.CARRIERS_TEXT + ', a domicilio o a sucursal.'], ['¿Cuánto cuesta el envío?', (CONFIG.ENVIO_GRATIS ? 'El envío es gratis a todo el país: el costo ya está incluido en el precio.' : 'El costo lo paga el comprador. Se calcula automáticamente con tu código postal antes de pagar, con la tarifa vigente de cada empresa.')], ['¿Tienen stock?', 'Sí. Todo producto publicado en la tienda está en stock.'], ['¿Qué medios de pago aceptan?', 'Tarjetas Visa, Mastercard, American Express, Cabal y Naranja.'], ['¿Tienen garantía?', 'Todos los productos tienen garantía oficial del fabricante.']]],
   contacto: ['Contacto', 'Escribinos por WhatsApp y te respondemos a la brevedad.'],
   servicio: ['Servicio técnico', 'Texto de ejemplo: completá con la información de tu servicio técnico.'],
   corporativo: ['Servicios corporativos', 'Texto de ejemplo: compras por volumen y facturación A para empresas.'],
@@ -13,14 +13,14 @@ C.pages = {
   garantias: ['Garantías', 'Texto legal de ejemplo: reemplazar por el texto oficial.']
 };
 C.header = () => `
-<div class="bg-white text-black border-b border-neutral-300 text-center text-xs sm:text-sm font-black tracking-wide py-2 px-4">${CONFIG.STOCK_NOTICE}</div>
+<div class="bg-orange-500 text-white text-center text-xs sm:text-sm font-black tracking-wide py-2 px-4">${CONFIG.STOCK_NOTICE}</div>
 <div class="bg-black text-white text-xs text-center py-2 px-4">${CONFIG.ANNOUNCEMENT}</div>
 <header class="glass-header sticky top-0 z-40 border-b border-neutral-200">
   <div class="max-w-7xl mx-auto flex items-center gap-4 px-4 h-16">
     <a href="#/" class="font-black tracking-tight text-lg whitespace-nowrap">MAXIM<span class="font-light">ELECTRONIC</span></a>
     <nav class="hidden lg:flex gap-5 text-sm ml-4">
       ${Store.cats().slice(0, 7).map(c => `<a class="hover:underline" href="#/catalogo/${encodeURIComponent(c)}">${c}</a>`).join('')}
-      <a class="font-semibold hover:underline" href="#/catalogo/ofertas">Ofertas</a>
+      <a class="font-bold bg-red-600 text-white rounded-full px-3 py-0.5 hover:bg-red-700" href="#/catalogo/ofertas">Ofertas</a>
     </nav>
     <form class="ml-auto flex-1 max-w-xs" onsubmit="return App.search(event)">
       <input id="q" list="sug" autocomplete="off" placeholder="Buscar productos" class="w-full rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm focus:outline-none focus:border-black">
@@ -65,17 +65,25 @@ C.benefits = () => `
   ${[['headset', 'Asesoría remota', 'Comprá desde todo el país, sin moverte de tu casa'], ['shield-check', 'Seguridad', 'Tus datos personales protegidos'], ['badge-check', 'Garantía', 'Gestioná tu garantía en nuestro servicio técnico'], ['layout-grid', 'Catálogo', 'La mayor variedad de tecnología de alta gama']]
     .map(b => `<div><i data-lucide="${b[0]}" class="mx-auto mb-2"></i><p class="font-semibold">${b[1]}</p><p class="text-neutral-500">${b[2]}</p></div>`).join('')}
 </div></section>`;
+C.pct = p => p.precio_lista > p.precio_final ? Math.round((1 - p.precio_final / p.precio_lista) * 100) : 0;
+C.badge = p => { const d = C.pct(p); return d > 0 ? `<span class="inline-block bg-red-600 text-white text-xs font-black rounded-full px-2.5 py-1">OFERTA -${d}%</span>` : (p.oferta ? '<span class="inline-block bg-red-600 text-white text-xs font-black rounded-full px-2.5 py-1">OFERTA</span>' : ''); };
 C.price = (p, big) => {
   const usd = Number(p.precio_usd) > 0, lista = p.precio_lista > p.precio_final ? `<span class="line-through text-neutral-500 mr-2">${Store.fmt(p.precio_lista)}</span>` : '';
-  return usd
+  const eg = CONFIG.ENVIO_GRATIS ? '<div class="text-xs font-semibold text-green-700">Envío gratis</div>' : '';
+  const bd = C.badge(p) ? `<div class="mb-1">${C.badge(p)}</div>` : '';
+  return bd + eg + (usd
     ? `<div class="${big ? 'text-3xl' : 'text-xl'} font-black">${Store.fmtUsd(p.precio_usd)}</div><div class="${big ? 'text-lg' : 'text-sm'} text-neutral-600">${lista}${Store.fmt(p.precio_final)}</div>`
-    : `${lista ? `<div class="text-sm">${lista}</div>` : ''}<div class="${big ? 'text-3xl' : 'text-xl'} font-black">${Store.fmt(p.precio_final)}</div>`;
+    : `${lista ? `<div class="text-sm">${lista}</div>` : ''}<div class="${big ? 'text-3xl' : 'text-xl'} font-black">${Store.fmt(p.precio_final)}</div>`);
 };
+C.esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+C.stars = n => { const k = Math.round(n); return '★'.repeat(k) + '☆'.repeat(5 - k); };
+C.rate = sku => { const r = Store.rating(sku); return r.n ? `<span class="text-sm"><span class="text-amber-500">${C.stars(r.avg)}</span> ${r.avg.toFixed(1).replace('.', ',')} <span class="text-neutral-500">(${r.n})</span></span>` : ''; };
 C.card = p => `
 <article class="grad-light rounded-2xl p-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition cursor-pointer flex flex-col" onclick="App.open('${p.sku}')">
-  <div class="category-card-hover overflow-hidden rounded-xl"><img src="${p.imagen}" alt="${p.nombre}" loading="lazy" class="w-full aspect-square object-cover"></div>
+  <div class="category-card-hover overflow-hidden rounded-xl relative"><img src="${p.imagen}" alt="${p.nombre}" loading="lazy" class="w-full aspect-square object-cover">${C.badge(p) ? `<span class="absolute top-2 left-2">${C.badge(p)}</span>` : ''}</div>
   <div class="mt-3 text-xs text-neutral-500">Ref: ${p.sku}${p.stock > 0 ? '' : ' · Sin stock'}</div>
   <h3 class="font-semibold mt-1 leading-snug">${p.nombre}</h3>
+  <div class="mt-1">${C.rate(p.sku)}</div>
   <div class="mt-auto pt-3">
     ${C.price(p)}
     <button ${p.stock > 0 ? '' : 'disabled'} onclick="event.stopPropagation();App.add('${p.sku}')" class="mt-3 w-full rounded-full py-2 text-sm font-semibold ${p.stock > 0 ? 'bg-black text-white hover:bg-neutral-800' : 'bg-neutral-300 text-neutral-500'}">Agregar al carrito</button>
@@ -84,14 +92,16 @@ C.card = p => `
 C.featured = () => `
 <section class="max-w-7xl mx-auto px-4 py-12"><h2 class="text-2xl font-black mb-6">Productos destacados</h2>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${Store.products.filter(p => p.destacado).slice(0, 8).map(C.card).join('')}</div></section>`;
-C.reviews = () => `
-<section class="grad-dark text-white"><div class="max-w-7xl mx-auto px-4 py-12">
+C.reviews = () => {
+  const l = Store.reviews.filter(x => x.comentario && x.estrellas >= 4).slice(0, 3);
+  if (!l.length) return '';   // sin reseñas reales no se muestra nada (nunca reseñas inventadas)
+  const avg = Store.reviews.reduce((a, x) => a + x.estrellas, 0) / Store.reviews.length;
+  return `<section class="grad-dark text-white"><div class="max-w-7xl mx-auto px-4 py-12">
   <div class="flex flex-wrap items-center gap-4 mb-6"><h2 class="text-2xl font-black">Lo que dicen nuestros clientes</h2>
-  <span class="text-sm text-neutral-400">★★★★★ 4,9 · reseñas de ejemplo</span>
-  <a href="#" class="text-sm underline">Leé las opiniones</a></div>
-  <div class="grid md:grid-cols-3 gap-4">${[['Excelente atención y llegó rápido.', 'Antonela Estefanía de la Cruz'], ['Compré mi drone y vino perfecto.', 'Cliente 2'], ['Muy buena asesoría por WhatsApp.', 'Cliente 3']]
-    .map(r => `<div class="glass-card text-black rounded-2xl p-5"><p>★★★★★</p><p class="mt-2">${r[0]}</p><p class="mt-3 text-sm text-neutral-500">${r[1]}</p></div>`).join('')}</div>
+  <span class="text-sm text-neutral-300"><span class="text-amber-400">${C.stars(avg)}</span> ${avg.toFixed(1).replace('.', ',')} · ${Store.reviews.length} ${Store.reviews.length === 1 ? 'opinión' : 'opiniones'}</span></div>
+  <div class="grid md:grid-cols-3 gap-4">${l.map(r => `<div class="glass-card text-black rounded-2xl p-5"><p class="text-amber-500">${C.stars(r.estrellas)}</p><p class="mt-2">${C.esc(r.comentario)}</p><p class="mt-3 text-sm text-neutral-500">${C.esc(r.nombre)}</p></div>`).join('')}</div>
 </div></section>`;
+};
 C.categories = () => `
 <section class="max-w-7xl mx-auto px-4 py-12"><h2 class="text-2xl font-black mb-6">Categorías</h2>
 <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">${Store.cats().map(c => {
@@ -144,10 +154,12 @@ C.modal = p => `
   <div class="p-6"><button onclick="App.close()" class="float-right" aria-label="Cerrar"><i data-lucide="x"></i></button>
     <p class="text-xs text-neutral-500">${p.marca} · ${p.categoria}</p><h3 class="text-2xl font-black mt-1">${p.nombre}</h3><p class="text-xs text-neutral-500">Ref: ${p.sku}</p>
     <div class="mt-3">${C.price(p, true)}</div>
+    <div class="mt-2">${C.rate(p.sku)}</div>
     <p class="mt-4 text-sm text-neutral-600">${p.descripcion || ''}</p><p class="mt-2 text-sm text-neutral-600">${p.especificaciones || ''}</p>
     ${(p.colores || []).length ? `<select id="vc" class="mt-4 w-full border rounded-full px-3 py-2 text-sm">${p.colores.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
     ${(p.almacenamiento || []).length ? `<select id="va" class="mt-2 w-full border rounded-full px-3 py-2 text-sm">${p.almacenamiento.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
     <button ${p.stock > 0 ? '' : 'disabled'} onclick="App.addModal('${p.sku}')" class="mt-5 w-full rounded-full py-3 font-semibold ${p.stock > 0 ? 'bg-black text-white' : 'bg-neutral-300 text-neutral-500'}">${p.stock > 0 ? 'Agregar al carrito' : 'Sin stock'}</button>
+    ${Store.reviewsOf(p.sku).length ? `<div class="mt-6 border-t pt-4"><p class="font-black text-sm mb-2">Opiniones de clientes</p><div class="space-y-3 max-h-56 overflow-auto">${Store.reviewsOf(p.sku).slice(0, 20).map(x => `<div class="text-sm"><span class="text-amber-500">${C.stars(x.estrellas)}</span> <b>${C.esc(x.nombre)}</b>${x.comentario ? `<p class="text-neutral-600">${C.esc(x.comentario)}</p>` : ''}</div>`).join('')}</div></div>` : ''}
   </div></div></div>`;
 C.drawer = () => `
 <div class="fixed inset-0 z-50"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
@@ -157,7 +169,7 @@ C.drawer = () => `
     <div class="flex justify-between items-center gap-3 border-b pb-3"><div class="text-sm"><p class="font-semibold">${i.nombre}</p><p class="text-neutral-500">${[i.color, i.alm].filter(Boolean).join(' · ')}</p><p>${i.usd > 0 ? `<b>${Store.fmtUsd(i.usd)}</b><br><span class="text-neutral-600">${Store.fmt(i.precio)}</span>` : Store.fmt(i.precio)}</p></div>
     <div class="flex items-center gap-2"><button onclick="App.qty(${n},-1)" class="w-7 h-7 border rounded-full">−</button><span>${i.qty}</span><button onclick="App.qty(${n},1)" class="w-7 h-7 border rounded-full">+</button></div></div>`).join('') : '<p class="text-neutral-500 text-center py-20">Tu carrito está vacío. Agregá productos para empezar.</p>'}</div>
   <div class="p-4 border-t"><div class="flex justify-between items-start font-black text-lg mb-1"><span>Subtotal</span><span class="text-right">${Store.totalUsd() ? `<span class="block">${Store.fmtUsd(Store.totalUsd())}</span><span class="block text-sm font-semibold text-neutral-600">${Store.fmt(Store.total())}</span>` : Store.fmt(Store.total())}</span></div>
-  <p class="text-xs text-neutral-500 mb-3">El envío lo paga el comprador y se calcula con tu código postal antes de pagar.</p>
+  <p class="text-xs text-neutral-500 mb-3">${CONFIG.ENVIO_GRATIS ? 'Envío gratis a todo el país.' : 'El envío lo paga el comprador y se calcula con tu código postal antes de pagar.'}</p>
   ${Store.cart.length ? `<button onclick="Checkout.start()" class="w-full bg-black text-white rounded-full py-3 font-semibold">Finalizar compra</button>` : ''}</div></aside></div>`;
 C.inp = 'w-full border border-neutral-300 rounded-xl px-3 py-2 text-sm';
 C.auth = mode => `
@@ -175,10 +187,13 @@ C.auth = mode => `
 C.totales = () => {
   const s = Checkout.sel, usd = Store.totalUsd();
   return `<div class="text-sm flex justify-between"><span>Productos</span><span>${usd ? Store.fmtUsd(usd) + ' · ' : ''}${Store.fmt(Store.total())}</span></div>
-  <div class="text-sm flex justify-between"><span>Envío</span><span>${s ? Store.fmt(s.precio) : 'se calcula con tu código postal'}</span></div>
-  <div class="font-black text-lg flex justify-between"><span>Total a pagar</span><span>${Store.fmt(Store.total() + (s ? s.precio : 0))}</span></div>
+  <div class="text-sm flex justify-between"><span>Envío</span><span>${CONFIG.ENVIO_GRATIS ? '<b class="text-green-700">¡Gratis!</b>' : (s ? Store.fmt(s.precio) : 'se calcula con tu código postal')}</span></div>
+  ${Checkout.recargo(Checkout.metodo) ? `<div class="text-sm flex justify-between"><span>Recargo por pago con tarjeta (${Number(CONFIG.RECARGO_TARJETA_PCT)}%)</span><span>${Store.fmt(Checkout.recargo(Checkout.metodo))}</span></div>` : ''}
+  <div class="font-black text-lg flex justify-between"><span>Total a pagar</span><span>${Store.fmt(Store.total() + (s ? s.precio : 0) + Checkout.recargo(Checkout.metodo))}</span></div>
+  ${Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? '<p class="text-xs text-neutral-500">Pagando por transferencia o billetera virtual el precio no tiene recargo.</p>' : ''}
   <p class="text-xs text-neutral-500">El pago se realiza en pesos argentinos.</p>`;
 };
+const PROVINCIAS = ['Buenos Aires', 'Ciudad Autónoma de Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'];
 C.checkout = () => {
   const m = (Auth.user && Auth.user.user_metadata) || {}, P = CONFIG.PAYMENTS;
   const f = (n, l, v = '', req = true, t = 'text') => `<input name="${n}" type="${t}" ${req ? 'required' : ''} value="${v}" placeholder="${l}" class="${C.inp}">`;
@@ -186,28 +201,47 @@ C.checkout = () => {
 <form onsubmit="return Checkout.submit(event)" class="relative bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-auto p-6 space-y-3">
   <h3 class="text-xl font-black">Finalizar compra</h3>
   <p class="text-sm text-neutral-600">${Store.cart.map(i => `${i.qty}x ${i.nombre}`).join(' · ')}</p>
-  ${f('nombre', 'Nombre y apellido', m.nombre || '')}${f('telefono', 'Teléfono', m.telefono || '', true, 'tel')}
-  ${f('direccion', 'Dirección de entrega (calle y número)')}
-  <div class="grid grid-cols-2 gap-2">${f('localidad', 'Localidad')}${f('provincia', 'Provincia')}</div>
-  <input name="cp" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Código postal (4 números, ej. 3370)" oninput="Checkout.cpChanged(this.value)" class="${C.inp}">
-  ${f('notas', 'Notas (opcional)', '', false)}
-  <div class="text-sm space-y-2"><p class="font-semibold">Envío <span class="font-normal text-neutral-500">(lo paga el comprador)</span></p>
+  <p class="text-xs text-neutral-500">Completá tus datos tal cual figuran en tu DNI: la transportista los pide para entregar el paquete.</p>
+  ${f('nombre', 'Nombre y apellido completos, como figuran en tu DNI', m.nombre || '')}
+  <input name="dni" required inputmode="numeric" pattern="[0-9.]{7,10}" maxlength="10" placeholder="DNI (solo números, sin puntos)" class="${C.inp}">
+  ${f('telefono', 'Teléfono con código de área, obligatorio (ej. 3755123456)', m.telefono || '', true, 'tel')}
+  <p class="text-xs text-neutral-500 -mt-2">Lo usamos solo para coordinar la entrega si hace falta.</p>
+  ${f('direccion', 'Dirección exacta: calle y número')}
+  ${f('piso', 'Piso, departamento, torre o barrio (opcional)', '', false)}
+  <div class="grid grid-cols-2 gap-2">${f('localidad', 'Localidad')}<select name="provincia" required class="${C.inp}"><option value="">Provincia</option>${PROVINCIAS.map(x => `<option>${x}</option>`).join('')}</select></div>
+  <input name="cp" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Código postal (4 números, ej. 3370)" ${CONFIG.ENVIO_GRATIS ? '' : 'oninput="Checkout.cpChanged(this.value)"'} class="${C.inp}">
+  ${f('notas', 'Referencias para la entrega (opcional): color de la casa, entre qué calles, timbre…', '', false)}
+  <div class="text-sm"><label class="font-semibold">Ubicación en Google Maps <span class="font-normal text-neutral-500">(opcional)</span></label>
+    <p class="text-xs text-neutral-500">Ayuda a que el paquete llegue sin errores.</p>
+    <button type="button" onclick="Checkout.miUbicacion()" class="mt-1 border border-black rounded-full px-3 py-1 text-xs">Usar mi ubicación actual</button>
+    <input name="maps" placeholder="O pegá el enlace de Google Maps de tu casa" class="${C.inp} mt-2"><p id="ubicinfo" class="text-xs text-neutral-600 mt-1"></p></div>
+  <div class="text-sm"><label class="font-semibold">Foto de tu domicilio <span class="font-normal text-neutral-500">(opcional)</span></label>
+    <p class="text-xs text-neutral-500">Frente de la casa, portón o timbre, para evitar errores en la entrega. Se usa solo para el envío.</p>
+    <input id="fotoin" type="file" accept="image/*" onchange="Checkout.pickFoto(this)" class="mt-1 text-xs"><div id="fotoprev" class="mt-2"></div><p id="fotoerr" class="text-xs text-red-700"></p></div>
+  ${CONFIG.ENVIO_GRATIS ? '<div class="text-sm rounded-xl bg-green-50 border border-green-300 p-3"><p class="font-semibold text-green-800">Envío gratis a todo el país</p><p class="text-xs text-neutral-600">Te avisamos por mail cuando despachemos tu pedido.</p></div>' : `  <div class="text-sm space-y-2"><p class="font-semibold">Envío <span class="font-normal text-neutral-500">(lo paga el comprador)</span></p>
     <div id="envopts" class="space-y-2 text-neutral-500">Ingresá tu código postal para calcular el costo de envío.</div>
-    <div id="sucwrap"></div></div>
+    <div id="sucwrap"></div></div>`}
   <div id="ctot" class="space-y-1 border-t pt-3">${C.totales()}</div>
   <div class="text-sm space-y-2"><p class="font-semibold">Medio de pago</p>
-    ${[['uala', 'Tarjeta de crédito o débito (Ualá)'], ['mercadopago', 'Mercado Pago (tarjeta o dinero en cuenta)'], ['transferencia', 'Transferencia bancaria / billetera virtual']]
-      .filter(([k]) => P[k]).map(([k, t], i) => `<label class="flex gap-2"><input type="radio" name="metodo" value="${k}" ${i === 0 ? 'checked' : ''}> ${t}</label>`).join('')}</div>
+    ${[['uala', 'Tarjeta de crédito o débito (Ualá)' + (Number(CONFIG.CUOTAS_MAX) > 1 ? ' · hasta ' + Number(CONFIG.CUOTAS_MAX) + ' cuotas' : '') + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · +' + Number(CONFIG.RECARGO_TARJETA_PCT) + '% de recargo (incluye el costo de las cuotas)' : '')], ['mercadopago', 'Billetera virtual, transferencia, tarjeta o efectivo (Pago Fácil / Rapipago)'], ['transferencia', 'Transferencia bancaria / billetera virtual' + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · precio sin recargo' : '')]]
+      .filter(([k]) => P[k]).map(([k, t], i) => `<label class="flex gap-2"><input type="radio" name="metodo" value="${k}" ${i === 0 ? 'checked' : ''} onchange="Checkout.setMetodo(this.value)"> ${t}</label>`).join('')}</div>
   <p id="cerr" class="text-sm text-red-700"></p>
   <button id="cbtn" class="w-full bg-black text-white rounded-full py-3 font-semibold">Confirmar pedido</button></form></div>`;
 };
 C.done = r => `<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
 <div class="relative bg-white rounded-3xl max-w-md w-full p-6 text-center space-y-3">
   <p class="text-sm text-neutral-500">Pedido recibido</p><p class="text-4xl font-black">${r.numero}</p><p class="font-semibold">Total: ${Store.fmt(r.total)}</p>
-  ${r.transferencia ? `<div class="text-sm text-left grad-light rounded-2xl p-4"><p>Para confirmar tu compra, transferí <b>${Store.fmt(r.total)}</b> a:</p>
-    <p class="mt-2">Alias: <b>${r.transferencia.alias || '(a confirmar)'}</b></p><p>Titular: <b>${r.transferencia.titular || ''}</b></p>
-    <p class="mt-2">Indicá el número de pedido <b>${r.numero}</b> en el concepto y mandanos el comprobante por WhatsApp.</p></div>
-    <a target="_blank" rel="noopener" href="${Store.wa('Hola, hice el pedido ' + r.numero + ' por ' + Store.fmt(r.total) + '. Te envío el comprobante.')}" class="block bg-black text-white rounded-full py-3 font-semibold">Enviar comprobante por WhatsApp</a>` : ''}
+  ${r.transferencia ? `<div id="tbox"><div class="text-sm text-left grad-light rounded-2xl p-4 space-y-2"><p>Transferí exactamente este monto desde cualquier billetera virtual o banco:</p>
+    <div class="flex justify-between items-center gap-2"><span>Monto: <b>${Store.fmt(r.total)}</b></span><button type="button" onclick="Checkout.copy('${Number(r.total).toFixed(2)}', this)" class="text-xs border border-black rounded-full px-3 py-1">Copiar monto</button></div>
+    <div class="flex justify-between items-center gap-2"><span>Alias: <b>${C.esc(r.transferencia.alias || '(a confirmar)')}</b></span><button type="button" onclick="Checkout.copy('${C.esc(r.transferencia.alias || '')}', this)" class="text-xs border border-black rounded-full px-3 py-1">Copiar alias</button></div>
+    ${r.transferencia.cvu ? `<div class="flex justify-between items-center gap-2"><span>CVU: <b>${C.esc(r.transferencia.cvu)}</b></span><button type="button" onclick="Checkout.copy('${C.esc(r.transferencia.cvu)}', this)" class="text-xs border border-black rounded-full px-3 py-1">Copiar CVU</button></div>` : ''}
+    <p>Titular: <b>${C.esc(r.transferencia.titular || '')}</b></p>
+    <p class="text-xs text-neutral-600">En el concepto podés poner el número de pedido <b>${r.numero}</b>.</p></div>
+    <button type="button" onclick="Checkout.yaPague('${r.numero}')" class="mt-3 w-full bg-black text-white rounded-full py-3 font-semibold">Ya hice la transferencia</button></div>` : ''}
   <a href="#/pedidos" onclick="App.close()" class="block underline text-sm">Ver mis pedidos</a></div></div>`;
+C.exito = ref => `<section class="max-w-xl mx-auto px-4 py-16 text-center"><div class="text-5xl mb-3">✓</div><h2 class="text-3xl font-black">¡Pago exitoso!</h2>
+  <p class="mt-3 text-neutral-600">Recibimos tu pago. Número de pedido:</p><p class="text-2xl font-black mt-1">${C.esc(ref || '')}</p>
+  <p class="mt-3 text-sm text-neutral-600">Te enviamos el comprobante a tu mail. Si no lo ves, revisá la carpeta de spam.</p>
+  <a href="#/pedidos" class="inline-block mt-6 bg-black text-white rounded-full px-6 py-3 text-sm font-semibold">Ver mis pedidos</a></section>`;
 C.pedidos = () => `<section class="max-w-3xl mx-auto px-4 py-12"><div class="flex justify-between items-center mb-6"><h2 class="text-3xl font-black">Mis pedidos</h2>
   <button onclick="Auth.out()" class="text-sm underline">Cerrar sesión</button></div><div id="plist" class="space-y-3">Cargando…</div></section>`;

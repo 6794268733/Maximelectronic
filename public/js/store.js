@@ -22,6 +22,16 @@ const Store = {
     this.all = rows;
     this.products = rows.filter(p => p.stock > 0);   // la tienda solo publica lo que hay en stock
   },
+  reviews: [],
+  async loadReviews() {
+    try {
+      if (!CONFIG.SUPABASE_URL) return;
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/resenas?estado=eq.publicada&select=sku,nombre,estrellas,comentario,creado&order=creado.desc&limit=500`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
+      if (r.ok) this.reviews = await r.json();
+    } catch (e) { this.reviews = []; }
+  },
+  reviewsOf(sku) { return this.reviews.filter(x => x.sku === sku); },
+  rating(sku) { const l = this.reviewsOf(sku); return { n: l.length, avg: l.length ? l.reduce((a, x) => a + x.estrellas, 0) / l.length : 0 }; },
   cats() { return [...new Set(this.products.map(p => p.categoria).filter(Boolean))]; },
   find(sku) { return this.all.find(p => p.sku === sku); },
   list({ cat, q, sort, onlyStock } = {}) {

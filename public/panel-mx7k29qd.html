@@ -18,7 +18,7 @@
 <script src="js/admin.js"></script>
 <script>
   const App = { render() { document.getElementById('app').innerHTML = Admin.view(); } };
-  Store.load().then(() => App.render());
+  Store.load().then(() => { App.render(); if (Admin.pw) Admin.loadResenas(); });
 </script>
 </body>
 </html>

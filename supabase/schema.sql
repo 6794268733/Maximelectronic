@@ -86,3 +86,28 @@ end $$;
 revoke execute on function crear_pedido(uuid,text,text,text,jsonb,jsonb,text) from public, anon, authenticated;
 revoke execute on function cancelar_pedido(bigint) from public, anon, authenticated;
 revoke execute on function liberar_vencidos(int) from public, anon, authenticated;
+
+
+-- ===== Reseñas: ver también supabase/resenas.sql (ya incluido abajo) =====
+create table if not exists resenas (
+  id uuid primary key default gen_random_uuid(),
+  pedido_numero bigint not null references pedidos(numero) on delete cascade,
+  sku text not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  nombre text,
+  estrellas integer not null check (estrellas between 1 and 5),
+  comentario text,
+  estado text not null default 'pendiente',   -- pendiente | publicada | oculta
+  creado timestamptz default now(),
+  unique (pedido_numero, sku)                  -- una sola reseña por producto y por pedido
+);
+alter table resenas enable row level security;
+drop policy if exists "ver resenas" on resenas;
+-- Cualquiera ve las publicadas; cada cliente ve además las suyas. Nadie inserta ni modifica desde el navegador:
+-- las reseñas se crean por /api/resena y se moderan por /api/admin (clave de servidor).
+create policy "ver resenas" on resenas for select using (estado = 'publicada' or auth.uid() = user_id);
+create index if not exists resenas_sku_pub on resenas(sku) where estado = 'publicada';
+-- pedidos.estado ahora admite también: entregado
+
+-- Bucket privado para la foto opcional del domicilio (se puede correr más de una vez)
+insert into storage.buckets (id, name, public) values ('domicilios', 'domicilios', false) on conflict (id) do nothing;

@@ -28,6 +28,7 @@ const Excel = {
         destacado: yes(g('destacado')), oferta: yes(g('oferta')), etiqueta: String(g('etiqueta')).trim()
       };
       if (!p.precio_lista) p.precio_lista = p.precio_final;
+      if (p.precio_lista > p.precio_final) p.oferta = true;   // con descuento cargado, el producto entra solo en Ofertas
       const e = [];
       if (!p.nombre) e.push('falta nombre');
       if (!p.categoria) e.push('falta categoría');

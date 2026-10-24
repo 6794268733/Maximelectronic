@@ -1,6 +1,6 @@
 const App = {
   state: { sort: '', onlyStock: false }, idx: 0, timer: null,
-  async init() { await Store.load(); await Auth.init(); window.addEventListener('hashchange', () => { this.state = { sort: '', onlyStock: false }; this.render(); window.scrollTo(0, 0); }); this.render(); },
+  async init() { await Store.load(); await Auth.init(); await Store.loadReviews(); window.addEventListener('hashchange', () => { this.state = { sort: '', onlyStock: false }; this.render(); window.scrollTo(0, 0); }); this.render(); },
   render() {
     const [, r, a] = (location.hash || '#/').split('/'); const arg = a ? decodeURIComponent(a) : '';
     let body;
@@ -8,6 +8,7 @@ const App = {
     else if (r === 'buscar') body = C.catalog('todos', arg);
     else if (r === 'info') body = C.page(arg);
     else if (r === 'pedidos') body = C.pedidos();
+    else if (r === 'pago-exitoso') body = C.exito(arg);
     else body = C.home();
     document.getElementById('app').innerHTML = C.header() + body + C.footer();
     lucide.createIcons(); clearInterval(this.timer);
