@@ -196,21 +196,21 @@ C.totales = () => {
 const PROVINCIAS = ['Buenos Aires', 'Ciudad Autónoma de Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'];
 C.checkout = () => {
   const m = (Auth.user && Auth.user.user_metadata) || {}, P = CONFIG.PAYMENTS;
-  const f = (n, l, v = '', req = true, t = 'text') => `<input name="${n}" type="${t}" ${req ? 'required' : ''} value="${v}" placeholder="${l}" class="${C.inp}">`;
+  const f = (n, l, v = '', req = true, t = 'text') => `<input name="${n}" type="${t}" ${req ? 'required' : ''} value="${C.esc(v)}" placeholder="${l}" class="${C.inp}">`;
   return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
 <form onsubmit="return Checkout.submit(event)" class="relative bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-auto p-6 space-y-3">
   <h3 class="text-xl font-black">Finalizar compra</h3>
   <p class="text-sm text-neutral-600">${Store.cart.map(i => `${i.qty}x ${i.nombre}`).join(' · ')}</p>
   <p class="text-xs text-neutral-500">Completá tus datos tal cual figuran en tu DNI: la transportista los pide para entregar el paquete.</p>
   ${f('nombre', 'Nombre y apellido completos, como figuran en tu DNI', m.nombre || '')}
-  <input name="dni" required inputmode="numeric" pattern="[0-9.]{7,10}" maxlength="10" placeholder="DNI (solo números, sin puntos)" class="${C.inp}">
+  <input name="dni" value="${C.esc(m.dni || '')}" required inputmode="numeric" pattern="[0-9.]{7,10}" maxlength="10" placeholder="DNI (solo números, sin puntos)" class="${C.inp}">
   ${f('telefono', 'Teléfono con código de área, obligatorio (ej. 3755123456)', m.telefono || '', true, 'tel')}
   <p class="text-xs text-neutral-500 -mt-2">Lo usamos solo para coordinar la entrega si hace falta.</p>
-  ${f('direccion', 'Dirección exacta: calle y número')}
-  ${f('piso', 'Piso, departamento, torre o barrio (opcional)', '', false)}
-  <div class="grid grid-cols-2 gap-2">${f('localidad', 'Localidad')}<select name="provincia" required class="${C.inp}"><option value="">Provincia</option>${PROVINCIAS.map(x => `<option>${x}</option>`).join('')}</select></div>
-  <input name="cp" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Código postal (4 números, ej. 3370)" ${CONFIG.ENVIO_GRATIS ? '' : 'oninput="Checkout.cpChanged(this.value)"'} class="${C.inp}">
-  ${f('notas', 'Referencias para la entrega (opcional): color de la casa, entre qué calles, timbre…', '', false)}
+  ${f('direccion', 'Dirección exacta: calle y número', m.direccion || '')}
+  ${f('piso', 'Piso, departamento, torre o barrio (opcional)', m.piso || '', false)}
+  <div class="grid grid-cols-2 gap-2">${f('localidad', 'Localidad', m.localidad || '')}<select name="provincia" required class="${C.inp}"><option value="">Provincia</option>${PROVINCIAS.map(x => `<option ${x === m.provincia ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+  <input name="cp" value="${C.esc(m.cp || '')}" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Código postal (4 números, ej. 3370)" ${CONFIG.ENVIO_GRATIS ? '' : 'oninput="Checkout.cpChanged(this.value)"'} class="${C.inp}">
+  ${f('notas', 'Referencias para la entrega (opcional): color de la casa, entre qué calles, timbre…', m.notas || '', false)}
   <div class="text-sm"><label class="font-semibold">Ubicación en Google Maps <span class="font-normal text-neutral-500">(opcional)</span></label>
     <p class="text-xs text-neutral-500">Ayuda a que el paquete llegue sin errores.</p>
     <button type="button" onclick="Checkout.miUbicacion()" class="mt-1 border border-black rounded-full px-3 py-1 text-xs">Usar mi ubicación actual</button>
@@ -225,6 +225,7 @@ C.checkout = () => {
   <div class="text-sm space-y-2"><p class="font-semibold">Medio de pago</p>
     ${[['uala', 'Tarjeta de crédito o débito (cualquier banco)' + (Number(CONFIG.CUOTAS_MAX) > 1 ? ' · hasta ' + Number(CONFIG.CUOTAS_MAX) + ' cuotas' : '') + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · +' + Number(CONFIG.RECARGO_TARJETA_PCT) + '% de recargo (incluye el costo de las cuotas)' : '')], ['mercadopago', 'Billetera virtual, transferencia, tarjeta o efectivo (Pago Fácil / Rapipago)'], ['transferencia', 'Transferencia bancaria / billetera virtual' + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · precio sin recargo' : '')]]
       .filter(([k]) => P[k]).map(([k, t], i) => `<label class="flex gap-2"><input type="radio" name="metodo" value="${k}" ${i === 0 ? 'checked' : ''} onchange="Checkout.setMetodo(this.value)"> ${t}</label>`).join('')}</div>
+  <label class="flex gap-2 text-xs text-neutral-600"><input type="checkbox" name="guardar" checked> Guardar estos datos en mi cuenta para mis próximos pedidos</label>
   <p id="cerr" class="text-sm text-red-700"></p>
   <button id="cbtn" class="w-full bg-black text-white rounded-full py-3 font-semibold">Confirmar pedido</button></form></div>`;
 };
@@ -245,3 +246,42 @@ C.exito = ref => `<section class="max-w-xl mx-auto px-4 py-16 text-center"><div 
   <a href="#/pedidos" class="inline-block mt-6 bg-black text-white rounded-full px-6 py-3 text-sm font-semibold">Ver mis pedidos</a></section>`;
 C.pedidos = () => `<section class="max-w-3xl mx-auto px-4 py-12"><div class="flex justify-between items-center mb-6"><h2 class="text-3xl font-black">Mis pedidos</h2>
   <button onclick="Auth.out()" class="text-sm underline">Cerrar sesión</button></div><div id="plist" class="space-y-3">Cargando…</div></section>`;
+
+// ---------- Mi cuenta (ícono del usuario) ----------
+C.shell = inner => `<div class="fixed inset-0 z-50 flex justify-center sm:justify-end items-start p-4 sm:pt-20"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
+<div class="relative bg-white rounded-3xl w-full max-w-sm max-h-[90vh] overflow-auto p-5">${inner}</div></div>`;
+C.account = () => {
+  const u = Auth.user || {}, m = u.user_metadata || {};
+  const row = (icon, t, attrs) => { const tag = attrs.startsWith('href') ? 'a' : 'button'; return `<${tag} ${attrs} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-neutral-100 text-left text-sm font-semibold"><i data-lucide="${icon}" class="w-4 h-4"></i>${t}</${tag}>`; };
+  return C.shell(`<div class="flex justify-between items-start gap-3"><div class="min-w-0"><p class="text-xs text-neutral-500">Mi cuenta</p><p class="font-black text-lg truncate">${C.esc(m.nombre || 'Mi perfil')}</p><p class="text-sm text-neutral-600 truncate">${C.esc(u.email || '')}</p></div>
+  <button onclick="App.close()" aria-label="Cerrar"><i data-lucide="x"></i></button></div>
+  <div class="mt-4 border-t pt-2 space-y-1">
+  ${row('package', 'Mis pedidos', 'href="#/pedidos" onclick="App.close()"')}
+  ${row('map-pin', 'Mis datos para próximos pedidos', 'type="button" onclick="Auth.datos()"')}
+  ${row('lock', 'Cambiar contraseña', 'type="button" onclick="Auth.passModal()"')}
+  ${row('circle-help', 'Preguntas frecuentes', 'href="#/info/faq" onclick="App.close()"')}
+  ${row('message-circle', 'Contacto', 'href="#/info/contacto" onclick="App.close()"')}
+  </div><div class="mt-2 border-t pt-2">${row('log-out', 'Cerrar sesión', 'type="button" onclick="App.close();Auth.out()"')}</div>`);
+};
+C.datos = () => {
+  const u = Auth.user || {}, m = u.user_metadata || {}, f = (n, l, v, req, t = 'text') => `<input name="${n}" type="${t}" ${req ? 'required' : ''} value="${C.esc(v || '')}" placeholder="${l}" class="${C.inp}">`;
+  return C.shell(`<form onsubmit="return Auth.saveDatos(event)" class="space-y-3">
+  <div class="flex justify-between items-center"><h3 class="font-black text-lg">Mis datos</h3><button type="button" onclick="Auth.menu()" class="text-sm underline">Volver</button></div>
+  <p class="text-xs text-neutral-500">Se completan solos cuando hacés un pedido. Mail de la cuenta: <b>${C.esc(u.email || '')}</b></p>
+  ${f('nombre', 'Nombre y apellido completos', m.nombre, true)}
+  <input name="dni" value="${C.esc(m.dni || '')}" inputmode="numeric" maxlength="10" placeholder="DNI (solo números, sin puntos)" class="${C.inp}">
+  ${f('telefono', 'Teléfono con código de área', m.telefono, false, 'tel')}
+  ${f('direccion', 'Dirección: calle y número', m.direccion, false)}
+  ${f('piso', 'Piso, departamento, torre o barrio', m.piso, false)}
+  <div class="grid grid-cols-2 gap-2">${f('localidad', 'Localidad', m.localidad, false)}<select name="provincia" class="${C.inp}"><option value="">Provincia</option>${PROVINCIAS.map(x => `<option ${x === m.provincia ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+  <input name="cp" value="${C.esc(m.cp || '')}" inputmode="numeric" maxlength="4" placeholder="Código postal (4 números)" class="${C.inp}">
+  ${f('notas', 'Referencias para la entrega', m.notas, false)}
+  <p id="derr" class="text-sm text-red-700"></p>
+  <button id="dbtn" class="w-full bg-black text-white rounded-full py-3 font-semibold">Guardar mis datos</button></form>`);
+};
+C.password = () => C.shell(`<form onsubmit="return Auth.savePass(event)" class="space-y-3">
+  <div class="flex justify-between items-center"><h3 class="font-black text-lg">Cambiar contraseña</h3><button type="button" onclick="Auth.menu()" class="text-sm underline">Volver</button></div>
+  <input name="p1" type="password" required minlength="6" autocomplete="new-password" placeholder="Nueva contraseña (mínimo 6 caracteres)" class="${C.inp}">
+  <input name="p2" type="password" required minlength="6" autocomplete="new-password" placeholder="Repetí la nueva contraseña" class="${C.inp}">
+  <p id="perr" class="text-sm text-red-700"></p>
+  <button id="pbtn" class="w-full bg-black text-white rounded-full py-3 font-semibold">Guardar contraseña</button></form>`);

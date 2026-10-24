@@ -36,7 +36,10 @@ const Checkout = {
     if (!Auth.user) return Auth.modal('registro', () => Checkout.form());
     this.form();
   },
-  form() { document.getElementById('overlay').innerHTML = C.checkout(); lucide.createIcons(); },
+  form() {
+    document.getElementById('overlay').innerHTML = C.checkout(); lucide.createIcons();
+    const cp = document.querySelector('#overlay [name=cp]'); if (!CONFIG.ENVIO_GRATIS && cp && /^\d{4}$/.test(cp.value)) this.cpChanged(cp.value);   // datos guardados: cotiza el envío solo
+  },
   submit(e) { e.preventDefault(); this.send(e.target); return false; },
   async send(form) {
     const d = Object.fromEntries(new FormData(form)), err = document.getElementById('cerr'), btn = document.getElementById('cbtn');
@@ -57,6 +60,7 @@ const Checkout = {
       let r = {}; try { r = await res.json(); } catch (x) {}
       if (res.status === 409) { this.sel = null; this.totals(); this.quote(d.cp); throw new Error(r.error); }
       if (!res.ok) throw new Error(r.error || 'El cobro solo funciona con la web publicada (no en Live Server).');
+      if (d.guardar) { const t = k => String(d[k] || '').trim(); await Promise.race([Auth.guardarDatos({ nombre: t('nombre'), dni: t('dni').replace(/[.\s]/g, ''), telefono: t('telefono'), direccion: t('direccion'), piso: t('piso'), localidad: t('localidad'), provincia: t('provincia'), cp: t('cp'), notas: t('notas') }), new Promise(ok => setTimeout(ok, 2500))]); }   // antes de redirigir al pago
       Store.cart = []; Store.saveCart(); App.upd();
       if (r.url) location.href = r.url;
       else { document.getElementById('overlay').innerHTML = C.done(r); lucide.createIcons(); }
