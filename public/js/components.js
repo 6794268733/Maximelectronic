@@ -18,17 +18,16 @@ C.header = () => `
 <header class="glass-header sticky top-0 z-40 border-b border-neutral-200">
   <div class="max-w-7xl mx-auto flex items-center gap-4 px-4 h-16">
     <a href="#/" class="font-black tracking-tight text-lg whitespace-nowrap">MAXIM<span class="font-light">ELECTRONIC</span></a>
-    <nav class="hidden lg:flex gap-5 text-sm ml-4">
-      ${Store.cats().slice(0, 7).map(c => `<a class="hover:underline" href="#/catalogo/${encodeURIComponent(c)}">${c}</a>`).join('')}
-      <a class="font-bold bg-red-600 text-white rounded-full px-3 py-0.5 hover:bg-red-700" href="#/catalogo/ofertas">Ofertas</a>
+    <nav class="hidden lg:flex items-center gap-4 xl:gap-5 text-sm ml-4 min-w-0">
+      ${Store.cats().slice(0, 7).map((c, i) => `<a class="hover:underline whitespace-nowrap ${i >= 5 ? 'hidden xl:inline' : ''}" href="#/catalogo/${encodeURIComponent(c)}">${c}</a>`).join('')}
+      <a class="font-bold bg-red-600 text-white rounded-full px-3 py-0.5 hover:bg-red-700 whitespace-nowrap" href="#/catalogo/ofertas">Ofertas</a>
     </nav>
-    <form class="ml-auto flex-1 max-w-xs" onsubmit="return App.search(event)">
-      <input id="q" list="sug" autocomplete="off" placeholder="Buscar productos" class="w-full rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm focus:outline-none focus:border-black">
-      <datalist id="sug">${Store.products.slice(0, 40).map(p => `<option value="${p.nombre}">`).join('')}</datalist>
-    </form>
-    <button onclick="App.account()" class="p-2" aria-label="Mi cuenta"><i data-lucide="user"></i></button>
-    <button onclick="App.cart(true)" class="relative p-2" aria-label="Carrito"><i data-lucide="shopping-bag"></i>
-      <span id="cc" class="absolute -top-1 -right-1 bg-black text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">${Store.count()}</span></button>
+    <div class="ml-auto flex items-center gap-1">
+      <button onclick="App.searchOpen()" class="p-2" aria-label="Buscar productos"><i data-lucide="search"></i></button>
+      <button onclick="App.account()" class="p-2" aria-label="Mi cuenta"><i data-lucide="user"></i></button>
+      <button onclick="App.cart(true)" class="relative p-2" aria-label="Carrito"><i data-lucide="shopping-bag"></i>
+        <span id="cc" class="absolute -top-1 -right-1 bg-black text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">${Store.count()}</span></button>
+    </div>
   </div>
   <div class="lg:hidden flex gap-2 overflow-x-auto no-scrollbar px-4 pb-3 text-sm">
     ${Store.cats().map(c => `<a class="whitespace-nowrap border border-neutral-300 rounded-full px-3 py-1" href="#/catalogo/${encodeURIComponent(c)}">${c}</a>`).join('')}
@@ -285,3 +284,11 @@ C.password = () => C.shell(`<form onsubmit="return Auth.savePass(event)" class="
   <input name="p2" type="password" required minlength="6" autocomplete="new-password" placeholder="Repetí la nueva contraseña" class="${C.inp}">
   <p id="perr" class="text-sm text-red-700"></p>
   <button id="pbtn" class="w-full bg-black text-white rounded-full py-3 font-semibold">Guardar contraseña</button></form>`);
+
+// Buscador: se abre al tocar la lupa del encabezado
+C.searchBox = () => `<div class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-24"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
+<form onsubmit="return App.search(event)" class="relative bg-white rounded-full w-full max-w-lg shadow-xl flex items-center gap-2 px-4 py-2">
+  <i data-lucide="search" class="w-5 h-5 text-neutral-500"></i>
+  <input id="q" list="sug" autocomplete="off" placeholder="Buscar productos" class="flex-1 bg-transparent py-2 text-base focus:outline-none">
+  <datalist id="sug">${Store.products.slice(0, 40).map(p => `<option value="${C.esc(p.nombre)}">`).join('')}</datalist>
+  <button type="button" onclick="App.close()" aria-label="Cerrar"><i data-lucide="x" class="w-5 h-5"></i></button></form></div>`;

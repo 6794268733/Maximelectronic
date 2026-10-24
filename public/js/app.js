@@ -22,7 +22,8 @@ const App = {
     s[this.idx].classList.remove('hidden'); dots[this.idx].classList.remove('opacity-40');
   },
   account() { if (Auth.user) Auth.menu(); else Auth.modal('ingreso'); },
-  search(e) { e.preventDefault(); const q = document.getElementById('q').value.trim(); if (q) location.hash = '#/buscar/' + encodeURIComponent(q); return false; },
+  searchOpen() { document.getElementById('overlay').innerHTML = C.searchBox(); lucide.createIcons(); const i = document.getElementById('q'); if (i) i.focus(); },
+  search(e) { e.preventDefault(); const q = document.getElementById('q').value.trim(); if (q) { App.close(); location.hash = '#/buscar/' + encodeURIComponent(q); } return false; },
   open(sku) { document.getElementById('overlay').innerHTML = C.modal(Store.find(sku)); lucide.createIcons(); },
   cart(open) { document.getElementById('overlay').innerHTML = C.drawer(); lucide.createIcons(); },
   close() { document.getElementById('overlay').innerHTML = ''; },
