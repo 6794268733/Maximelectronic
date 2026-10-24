@@ -221,10 +221,10 @@ C.checkout = () => {
   ${CONFIG.ENVIO_GRATIS ? '<div class="text-sm rounded-xl bg-green-50 border border-green-300 p-3"><p class="font-semibold text-green-800">Envío gratis a todo el país</p><p class="text-xs text-neutral-600">Te avisamos por mail cuando despachemos tu pedido.</p></div>' : `  <div class="text-sm space-y-2"><p class="font-semibold">Envío <span class="font-normal text-neutral-500">(lo paga el comprador)</span></p>
     <div id="envopts" class="space-y-2 text-neutral-500">Ingresá tu código postal para calcular el costo de envío.</div>
     <div id="sucwrap"></div></div>`}
-  <div id="ctot" class="space-y-1 border-t pt-3">${C.totales()}</div>
   <div class="text-sm space-y-2"><p class="font-semibold">Medio de pago</p>
     ${[['uala', 'Tarjeta de crédito o débito (cualquier banco)' + (Number(CONFIG.CUOTAS_MAX) > 1 ? ' · hasta ' + Number(CONFIG.CUOTAS_MAX) + ' cuotas' : '') + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · +' + Number(CONFIG.RECARGO_TARJETA_PCT) + '% de recargo (incluye el costo de las cuotas)' : '')], ['mercadopago', 'Billetera virtual, transferencia, tarjeta o efectivo (Pago Fácil / Rapipago)'], ['transferencia', 'Transferencia bancaria / billetera virtual' + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · precio sin recargo' : '')]]
       .filter(([k]) => P[k]).map(([k, t], i) => `<label class="flex gap-2"><input type="radio" name="metodo" value="${k}" ${i === 0 ? 'checked' : ''} onchange="Checkout.setMetodo(this.value)"> ${t}</label>`).join('')}</div>
+  <div id="ctot" class="space-y-1 border-t pt-3">${C.totales()}</div>
   <label class="flex gap-2 text-xs text-neutral-600"><input type="checkbox" name="guardar" checked> Guardar estos datos en mi cuenta para mis próximos pedidos</label>
   <p id="cerr" class="text-sm text-red-700"></p>
   <button id="cbtn" class="w-full bg-black text-white rounded-full py-3 font-semibold">Confirmar pedido</button></form></div>`;
