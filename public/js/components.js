@@ -153,6 +153,7 @@ C.modal = p => `
   <div class="p-6"><button onclick="App.close()" class="float-right" aria-label="Cerrar"><i data-lucide="x"></i></button>
     <p class="text-xs text-neutral-500">${p.marca} · ${p.categoria}</p><h3 class="text-2xl font-black mt-1">${p.nombre}</h3><p class="text-xs text-neutral-500">Ref: ${p.sku}</p>
     <div class="mt-3">${C.price(p, true)}</div>
+    ${p.garantia ? '<p class="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-green-700"><i data-lucide="shield-check" class="w-4 h-4"></i> Con garantía</p>' : ''}
     <div class="mt-2">${C.rate(p.sku)}</div>
     <p class="mt-4 text-sm text-neutral-600">${p.descripcion || ''}</p><p class="mt-2 text-sm text-neutral-600">${p.especificaciones || ''}</p>
     ${(p.colores || []).length ? `<select id="vc" class="mt-4 w-full border rounded-full px-3 py-2 text-sm">${p.colores.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
