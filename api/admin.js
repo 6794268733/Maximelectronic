@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
   fallos.delete(ip);
   const H = { apikey: E.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${E.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
   const T = `${E.SUPABASE_URL}/rest/v1/productos`;
-  const { accion, rows, sku, stock, mantenerStock, numero, estado, id } = req.body || {};
+  const { accion, rows, sku, stock, mantenerStock, numero, estado, id, empresa, seguimiento } = req.body || {};
   const P = `${E.SUPABASE_URL}/rest/v1/pedidos`, R = `${E.SUPABASE_URL}/rest/v1/resenas`;
   const clean = r => ({
     sku: String(r.sku || '').trim(), nombre: String(r.nombre || '').trim(), categoria: r.categoria || '', marca: r.marca || '',
@@ -61,12 +61,27 @@ module.exports = async (req, res) => {
       // pagado: solo transferencias pendientes (confirmación manual). enviado / entregado: pedidos ya pagados.
       const regla = { pagado: 'estado=eq.pendiente&metodo=eq.transferencia', enviado: 'estado=eq.pagado', entregado: 'estado=in.(pagado,enviado)' }[estado];
       if (!regla || !n) return res.status(400).json({ error: 'Datos inválidos.' });
-      const r = await fetch(`${P}?numero=eq.${n}&${regla}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify({ estado }) });
+      const cambio = { estado };
+      if (estado === 'enviado') {
+        // Al despachar hay que cargar la empresa y el número de seguimiento: quedan guardados en el pedido y van en el mail.
+        const emp = String(empresa || '').trim().replace(/\s+/g, ' ').slice(0, 60), seg = String(seguimiento || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+        if (!emp || !seg) return res.status(400).json({ error: 'Completá la empresa de envío y el número de seguimiento.' });
+        if (!/^[\w\-./ ]+$/.test(seg)) return res.status(400).json({ error: 'El número de seguimiento solo puede tener letras, números, guiones, puntos o barras.' });
+        const cur = await fetch(`${P}?numero=eq.${n}&select=envio`, { headers: H });
+        const actual = cur.ok ? (((await cur.json())[0] || {}).envio || {}) : {};
+        cambio.envio = { ...actual, despacho: { empresa: emp, seguimiento: seg, fecha: new Date().toISOString() } };
+      }
+      const r = await fetch(`${P}?numero=eq.${n}&${regla}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(cambio) });
       if (!r.ok) return res.status(500).json({ error: 'No se pudo cambiar el estado.' });
       const filas = await r.json();
       if (!filas.length) return res.status(409).json({ error: 'El pedido no estaba en un estado que permita ese cambio.' });
-      if (estado === 'pagado') { try { await require('./_mail').comprobante(filas[0]); } catch (e) { /* el mail es secundario */ } }
-      return res.status(200).json({ ok: true });
+      // Mail al cliente: al confirmar el pago (comprobante) y al marcar enviado (pedido en camino). El resultado vuelve al panel.
+      let mail = '';
+      if (estado === 'pagado' || estado === 'enviado') {
+        try { const M = require('./_mail'); const ok = estado === 'pagado' ? await M.comprobante(filas[0]) : await M.enviado(filas[0]); mail = ok ? 'enviado' : (M.ultimo || 'no se pudo enviar'); }
+        catch (e) { mail = 'ERROR: ' + ((e && e.message) || e); }
+      }
+      return res.status(200).json({ ok: true, mail });
     }
     // ---- Foto del domicilio: enlace temporal (10 minutos) ----
     if (accion === 'foto_url') {

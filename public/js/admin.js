@@ -1,7 +1,8 @@
 // Panel de administración. Las escrituras pasan por /api/admin, protegido con ADMIN_PASSWORD en el servidor.
 const Admin = {
   pending: null, tab: 'productos', pedidos: null, resenas: null, pw: sessionStorage.getItem('mx_pw') || '',
-  view() {
+  view() { return this.base() + this.envioModal(); },
+  base() {
     if (!this.pw) return `<section class="max-w-sm mx-auto px-4 py-20"><h2 class="text-2xl font-black mb-4">Administración</h2>
       <form onsubmit="return Admin.login(event)" class="space-y-3"><input name="pw" type="password" required placeholder="Contraseña de administrador" class="w-full border border-neutral-300 rounded-xl px-3 py-2">
       <button class="w-full bg-black text-white rounded-full py-3 font-semibold">Entrar</button></form></section>`;
@@ -42,7 +43,7 @@ const Admin = {
     return `<div class="mt-6 space-y-3">${this.pedidos.map(p => { const e = p.envio || {}; return `<div class="border rounded-2xl p-4 text-sm"><div class="flex flex-wrap justify-between gap-2"><b>MX-${String(p.numero).padStart(5, '0')} · ${this.esc(p.nombre || p.email)}</b><span>${lbl[p.estado] || p.estado} · ${new Date(p.creado).toLocaleDateString('es-AR')}</span></div>
       <p class="text-neutral-600 mt-1">${p.items.map(i => i.qty + 'x ' + this.esc(i.nombre)).join(' · ')} — ${Store.fmt(p.total)}</p>
       <p class="text-neutral-600">${this.esc(e.direccion)}, ${this.esc(e.localidad)} (${this.esc(e.cp)}) · ${this.esc(e.carrier || '')} ${this.esc(e.servicio || '')} · Tel: ${this.esc(p.telefono)}${e.dni ? ' · DNI: ' + this.esc(e.dni) : ''}${e.ubicacion && e.ubicacion.url ? ` · <a class="underline" target="_blank" rel="noopener" href="${this.esc(e.ubicacion.url)}">Ver ubicación en Google Maps</a>` : ''}${e.piso ? '<br>Piso/depto: ' + this.esc(e.piso) : ''}${e.notas ? '<br><i>Notas: ' + this.esc(e.notas) + '</i>' : ''}</p>
-      <div class="mt-2 flex flex-wrap gap-2">${e.foto ? `<button onclick="Admin.verFoto(${p.numero})" class="border border-black rounded-full px-3 py-1">Ver foto del domicilio</button>` : ''}${p.estado === 'pendiente' ? `<button onclick="Admin.estadoPedido(${p.numero},'pagado')" class="bg-black text-white rounded-full px-3 py-1">Confirmar pago recibido</button>` : ''}${p.estado === 'pagado' ? `<button onclick="Admin.estadoPedido(${p.numero},'enviado')" class="border border-black rounded-full px-3 py-1">Marcar enviado</button>` : ''}
+      <div class="mt-2 flex flex-wrap gap-2">${e.foto ? `<button onclick="Admin.verFoto(${p.numero})" class="border border-black rounded-full px-3 py-1">Ver foto del domicilio</button>` : ''}${p.estado === 'pendiente' ? `<button onclick="Admin.estadoPedido(${p.numero},'pagado')" class="bg-black text-white rounded-full px-3 py-1">Confirmar pago recibido</button>` : ''}${p.estado === 'pagado' ? `<button onclick="Admin.abrirEnvio(${p.numero})" class="border border-black rounded-full px-3 py-1">Marcar enviado</button>` : ''}
       ${p.estado !== 'entregado' && p.estado !== 'pendiente' ? `<button onclick="Admin.estadoPedido(${p.numero},'entregado')" class="bg-black text-white rounded-full px-3 py-1">Marcar entregado</button>` : ''}</div></div>`; }).join('')}</div>`;
   },
   resenasView() {
@@ -54,7 +55,37 @@ const Admin = {
       ${r.comentario ? `<p class="mt-1 text-neutral-700">${this.esc(r.comentario)}</p>` : '<p class="mt-1 text-neutral-400">(sin comentario)</p>'}
       <div class="mt-2 flex gap-2">${r.estado !== 'publicada' ? `<button onclick="Admin.moderar('${r.id}','publicada')" class="bg-black text-white rounded-full px-3 py-1">Publicar</button>` : ''}${r.estado !== 'oculta' ? `<button onclick="Admin.moderar('${r.id}','oculta')" class="border border-red-700 text-red-700 rounded-full px-3 py-1">Ocultar</button>` : ''}</div></div>`; }).join('')}</div>`;
   },
-  async estadoPedido(numero, estado) { if (!confirm(estado === 'pagado' ? '¿Ya viste la plata en tu cuenta? Se marca como pagado y se le envía el comprobante al cliente.' : '¿Marcar el pedido como ' + estado + '?')) return; const j = await this.call('pedido_estado', { numero, estado }); if (j) this.loadPedidos(); },
+  async estadoPedido(numero, estado) { if (!confirm(estado === 'pagado' ? '¿Ya viste la plata en tu cuenta? Se marca como pagado y se le envía el comprobante al cliente.' : '¿Marcar el pedido como ' + estado + '?')) return; const j = await this.call('pedido_estado', { numero, estado }); if (j) { if (j.mail) alert('Mail al cliente: ' + (j.mail === 'enviado' ? 'enviado ✓' : 'NO se envió. Motivo: ' + j.mail)); this.loadPedidos(); } },
+  envModal: null,
+  abrirEnvio(numero) { this.envModal = { numero }; App.render(); setTimeout(() => { const i = document.getElementById('env_emp'); if (i) i.focus(); }, 50); },
+  cerrarEnvio() { this.envModal = null; App.render(); },
+  envioModal() {
+    if (!this.envModal) return '';
+    const n = this.envModal.numero, ref = 'MX-' + String(n).padStart(5, '0'), cls = 'w-full border border-neutral-300 rounded-xl px-3 py-2 text-sm';
+    return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="Admin.cerrarEnvio()"></div>
+    <form onsubmit="return Admin.confirmarEnvio(event)" class="relative bg-white rounded-3xl max-w-md w-full p-6 space-y-3">
+      <h3 class="text-xl font-black">Despachar pedido ${ref}</h3>
+      <p class="text-sm text-neutral-600">Cargá los datos del envío. Al tocar <b>Finalizado</b> se marca como enviado y el cliente recibe el mail con estos datos.</p>
+      <label class="block text-sm font-semibold">Empresa de envío
+        <input id="env_emp" list="env_lista" required maxlength="60" placeholder="Elegí o escribí la empresa" class="${cls} mt-1 font-normal">
+        <datalist id="env_lista"><option value="Correo Argentino"><option value="Andreani"><option value="Vía Cargo"><option value="OCA"><option value="Moto / entrega propia"></datalist></label>
+      <label class="block text-sm font-semibold">Número de seguimiento
+        <input id="env_seg" required maxlength="60" placeholder="Ej. 3600001234567" class="${cls} mt-1 font-normal"></label>
+      <div class="flex gap-2 pt-1"><button type="button" onclick="Admin.cerrarEnvio()" class="flex-1 border border-neutral-400 rounded-full py-3 font-semibold">Cancelar</button>
+        <button id="env_btn" class="flex-1 bg-black text-white rounded-full py-3 font-semibold">Finalizado</button></div></form></div>`;
+  },
+  async confirmarEnvio(ev) {
+    ev.preventDefault();
+    const emp = document.getElementById('env_emp').value.trim(), seg = document.getElementById('env_seg').value.trim(), btn = document.getElementById('env_btn');
+    if (!emp || !seg) { alert('Completá la empresa y el número de seguimiento.'); return false; }
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    const j = await this.call('pedido_estado', { numero: this.envModal.numero, estado: 'enviado', empresa: emp, seguimiento: seg });
+    if (!j) { btn.disabled = false; btn.textContent = 'Finalizado'; return false; }
+    this.envModal = null;
+    if (j.mail) alert('Mail al cliente: ' + (j.mail === 'enviado' ? 'enviado ✓' : 'NO se envió. Motivo: ' + j.mail));
+    this.loadPedidos();
+    return false;
+  },
   async moderar(id, estado) { const j = await this.call('resena_estado', { id, estado }); if (j) this.loadResenas(); },
   async call(accion, data = {}) {
     try {
