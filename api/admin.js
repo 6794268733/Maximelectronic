@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
     peso_g: parseInt(r.peso_g, 10) > 0 ? parseInt(r.peso_g, 10) : null, alto_cm: parseInt(r.alto_cm, 10) > 0 ? parseInt(r.alto_cm, 10) : null,
     ancho_cm: parseInt(r.ancho_cm, 10) > 0 ? parseInt(r.ancho_cm, 10) : null, largo_cm: parseInt(r.largo_cm, 10) > 0 ? parseInt(r.largo_cm, 10) : null,
     stock: Math.max(0, parseInt(r.stock, 10) || 0), imagen: r.imagen || '', imagenes: r.imagenes || [],
-    colores: r.colores || [], almacenamiento: r.almacenamiento || [], destacado: !!r.destacado, oferta: !!r.oferta, etiqueta: r.etiqueta || ''
+    colores: r.colores || [], almacenamiento: r.almacenamiento || [], destacado: !!r.destacado, oferta: !!r.oferta, etiqueta: r.etiqueta || '', garantia: !!r.garantia
   });
   const up = lote => fetch(`${T}?on_conflict=sku`, { method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(lote) });
   try {
