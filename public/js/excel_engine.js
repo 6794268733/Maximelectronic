@@ -1,7 +1,7 @@
-const COLS = ['sku','nombre','categoria','subcategoria','marca','descripcion','especificaciones','precio_lista','precio_venta_usd','precio_final','stock','peso_g','alto_cm','ancho_cm','largo_cm','imagen_principal','imagenes_extra','colores','almacenamiento','destacado','oferta','etiqueta'];
+const COLS = ['sku','nombre','categoria','subcategoria','marca','descripcion','especificaciones','precio_lista','precio_venta_usd','precio_final','stock','peso_g','alto_cm','ancho_cm','largo_cm','imagen_principal','imagenes_extra','colores','almacenamiento','destacado','oferta','etiqueta','garantia'];
 const Excel = {
   template() {
-    const ejemplo = ['SKU-001','Producto de ejemplo','Celulares','','Marca','Descripción corta','Pantalla 6.1"; 256GB','',1032,1672000,10,600,8,12,20,'https://tu-sitio.com/foto.jpg','','Negro,Gris','128GB,256GB','si','si','Nuevo'];
+    const ejemplo = ['SKU-001','Producto de ejemplo','Celulares','','Marca','Descripción corta','Pantalla 6.1"; 256GB','',1032,1672000,10,600,8,12,20,'https://tu-sitio.com/foto.jpg','','Negro,Gris','128GB,256GB','si','si','Nuevo','si'];
     const ws = XLSX.utils.aoa_to_sheet([COLS, ejemplo]);
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Productos');
     XLSX.writeFile(wb, 'plantilla_productos.xlsx');
@@ -25,7 +25,7 @@ const Excel = {
         stock: num(g('stock')),
         imagen: String(g('imagen_principal')).trim(), imagenes: list(g('imagenes_extra')),
         colores: list(g('colores')), almacenamiento: list(g('almacenamiento')),
-        destacado: yes(g('destacado')), oferta: yes(g('oferta')), etiqueta: String(g('etiqueta')).trim()
+        destacado: yes(g('destacado')), oferta: yes(g('oferta')), etiqueta: String(g('etiqueta')).trim(), garantia: yes(g('garantia'))
       };
       if (!p.precio_lista) p.precio_lista = p.precio_final;
       if (p.precio_lista > p.precio_final) p.oferta = true;   // con descuento cargado, el producto entra solo en Ofertas
@@ -38,7 +38,7 @@ const Excel = {
     return { ok, errors };
   },
   exportXlsx(products) {
-    const data = products.map(p => [p.sku,p.nombre,p.categoria,p.subcategoria||'',p.marca,p.descripcion,p.especificaciones,p.precio_lista,p.precio_usd||'',p.precio_final,p.stock,p.peso_g||'',p.alto_cm||'',p.ancho_cm||'',p.largo_cm||'',p.imagen,(p.imagenes||[]).join(','),(p.colores||[]).join(','),(p.almacenamiento||[]).join(','),p.destacado?'si':'no',p.oferta?'si':'no',p.etiqueta]);
+    const data = products.map(p => [p.sku,p.nombre,p.categoria,p.subcategoria||'',p.marca,p.descripcion,p.especificaciones,p.precio_lista,p.precio_usd||'',p.precio_final,p.stock,p.peso_g||'',p.alto_cm||'',p.ancho_cm||'',p.largo_cm||'',p.imagen,(p.imagenes||[]).join(','),(p.colores||[]).join(','),(p.almacenamiento||[]).join(','),p.destacado?'si':'no',p.oferta?'si':'no',p.etiqueta,p.garantia?'si':'no']);
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([COLS, ...data]), 'Productos');
     XLSX.writeFile(wb, 'catalogo_maximelectronic.xlsx');
   },
