@@ -130,3 +130,13 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 - Al cobrar, la base de datos descuenta el stock del color en la misma operación (función `crear_pedido`): si dos clientes compran la última unidad a la vez, el segundo recibe un aviso y no se le cobra. Si un pedido se cancela o vence, el stock vuelve al color correspondiente.
 - Panel > Cambiar stock: en productos con stock por color se cargan las cantidades de todos los colores (`Negro:5,Blanco:2`).
 - **Activarlo (una sola vez):** correr `supabase/stock_colores.sql` en Supabase > SQL Editor > Run, y después subir el código. Hasta correr el SQL, importar productos devuelve un aviso que lo indica.
+
+
+## Aviso de venta al dueño
+- Cada compra por **transferencia** manda un mail al dueño apenas se crea el pedido (asunto "💰 Nueva compra por transferencia MX-xxxxx – $total (confirmá el pago)"): trae el monto exacto, la referencia, el cliente, los productos con color y el destino, y un enlace al panel. Cuando ves la plata, en el panel > Pedidos tocás "Confirmar pago recibido".
+- Las compras con **tarjeta** avisan cuando el pago queda aprobado (asunto "✅ Venta pagada …").
+- Llega a `OWNER_EMAIL`; si esa variable no está cargada, llega a maximelectronic1@gmail.com. `SITE_URL` (opcional) define el dominio del enlace al panel; por defecto https://maximelectronic.pages.dev.
+- Si el aviso no sale, el motivo queda en los registros (logs) de Cloudflare: "Aviso de venta al dueño NO enviado".
+
+## Mails de cuenta (registro, contraseña) en español
+- Esos mails los manda Supabase, no este código. `supabase/plantillas_mail_es.html` es una página (abrila en el navegador) con los textos en español listos para copiar y los pasos: conectar Gmail como SMTP (sin eso Supabase solo entrega a los miembros del equipo y con tope de 2 por hora), Site URL y pegar cada plantilla.

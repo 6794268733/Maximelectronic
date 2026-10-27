@@ -1,115 +1,137 @@
-// Panel de administración. Las escrituras pasan por /api/admin, protegido con ADMIN_PASSWORD en el servidor.
-const Admin = {
-  pending: null, tab: 'productos', pedidos: null, resenas: null, pw: sessionStorage.getItem('mx_pw') || '',
-  view() { return this.base() + this.envioModal(); },
-  base() {
-    if (!this.pw) return `<section class="max-w-sm mx-auto px-4 py-20"><h2 class="text-2xl font-black mb-4">Administración</h2>
-      <form onsubmit="return Admin.login(event)" class="space-y-3"><input name="pw" type="password" required placeholder="Contraseña de administrador" class="w-full border border-neutral-300 rounded-xl px-3 py-2">
-      <button class="w-full bg-black text-white rounded-full py-3 font-semibold">Entrar</button></form></section>`;
-    const pv = this.pending;
-    return `<section class="max-w-7xl mx-auto px-4 py-10">
-    <div class="flex justify-between items-center"><h2 class="text-3xl font-black">Panel de administración</h2><button onclick="Admin.logout()" class="text-sm underline">Salir</button></div>
-    
-    <div class="flex gap-2 mt-5 text-sm font-semibold">${[['productos', 'Productos'], ['pedidos', 'Pedidos'], ['resenas', 'Reseñas' + (this.pend() ? ' (' + this.pend() + ' por revisar)' : '')]].map(t => `<button onclick="Admin.go('${t[0]}')" class="px-4 py-2 rounded-full ${this.tab === t[0] ? 'bg-black text-white' : 'border border-neutral-400'}">${t[1]}</button>`).join('')}</div>
-    ${this.tab === 'pedidos' ? this.pedidosView() : this.tab === 'resenas' ? this.resenasView() : `<p class="mt-2 text-sm bg-neutral-200 rounded-xl p-3">El stock se descuenta solo con cada pedido. Los pedidos y las reseñas se gestionan en las otras pestañas.</p>
-    <div class="flex flex-wrap gap-2 mt-5">
-      <button onclick="Excel.template()" class="bg-black text-white rounded-full px-5 py-2 text-sm">Descargar plantilla Excel</button>
-      <button onclick="Excel.exportXlsx(Store.all)" class="border border-black rounded-full px-5 py-2 text-sm">Exportar Excel</button>
-      <button onclick="Admin.seed()" class="border border-neutral-400 text-neutral-600 rounded-full px-5 py-2 text-sm">Cargar productos de ejemplo</button></div>
-    <label class="mt-6 block border-2 border-dashed border-neutral-400 rounded-2xl p-10 text-center cursor-pointer grad-light"
-      ondragover="event.preventDefault()" ondrop="event.preventDefault();Admin.file(event.dataTransfer.files[0])">
-      Arrastrá tu Excel (.xlsx o .csv) acá o hacé clic para elegirlo
-      <input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="Admin.file(this.files[0])"></label>
-    ${pv ? `<div class="mt-6"><p class="font-semibold">Vista previa: ${pv.ok.length} productos válidos, ${pv.errors.length} con errores</p>
-      ${pv.errors.map(e => `<p class="text-sm text-red-700">Fila ${e.fila}: ${e.motivo}</p>`).join('')}
-      <div class="overflow-x-auto mt-3"><table class="text-sm w-full">${pv.ok.slice(0, 15).map(p => `<tr class="border-b"><td class="py-1 pr-3">${p.sku}</td><td class="pr-3">${p.nombre}</td><td class="pr-3">${p.categoria}</td><td class="pr-3">${p.precio_usd ? Store.fmtUsd(p.precio_usd) + ' · ' : ''}${Store.fmt(p.precio_final)}</td><td>${p.stock}${p.stock_colores ? ' (' + Excel.textoStockColores(p.stock_colores).replace(/,/g, ', ') + ')' : ''}</td></tr>`).join('')}</table></div>
-      <label class="block mt-3 text-sm"><input type="checkbox" id="ks" checked> Mantener el stock actual de los productos que ya existen, también el de cada color (recomendado)</label>
-      <button onclick="Admin.confirm()" class="mt-3 bg-black text-white rounded-full px-6 py-2 font-semibold">Confirmar importación</button></div>` : ''}
-    <h3 class="text-xl font-black mt-10 mb-3">Productos (${Store.all.length})</h3>
-    <div class="overflow-x-auto"><table class="text-sm w-full">${Store.all.map(p => `<tr class="border-b"><td class="py-2 pr-3">${p.sku}</td><td class="pr-3">${p.nombre}</td><td class="pr-3">${p.categoria}</td><td class="pr-3">${p.precio_usd ? Store.fmtUsd(p.precio_usd) + ' · ' : ''}${Store.fmt(p.precio_final)}</td><td class="pr-3">Stock: ${p.stock}${Store.conColor(p) ? '<br><span class="text-xs text-neutral-600">' + Excel.textoStockColores(p.stock_colores).replace(/,/g, ' · ').replace(/:/g, ' ') + '</span>' : ''}</td>
-      <td><button class="underline mr-3" onclick="Admin.setStock('${p.sku}')">Cambiar stock</button><button class="underline text-red-700" onclick="Admin.del('${p.sku}')">Eliminar</button></td></tr>`).join('')}</table></div>`}</section>`;
-  },
-
-  esc: t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]),
-  pend() { return (this.resenas || []).filter(r => r.estado === 'pendiente').length; },
-  async go(t) { this.tab = t; App.render(); if (t === 'pedidos') await this.loadPedidos(); if (t === 'resenas') await this.loadResenas(); },
-  async verFoto(n) { const w = window.open('', '_blank'); const j = await this.call('foto_url', { numero: n }); if (j && j.url && w) w.location = j.url; else if (w) w.close(); },
-  async loadPedidos() { const j = await this.call('pedidos'); if (j) { this.pedidos = j.pedidos; App.render(); } },
-  async loadResenas() { const j = await this.call('resenas'); if (j) { this.resenas = j.resenas; App.render(); } },
-  pedidosView() {
-    if (!this.pedidos) return '<p class="mt-6 text-neutral-500">Cargando pedidos…</p>';
-    if (!this.pedidos.length) return '<p class="mt-6 text-neutral-500">Todavía no hay pedidos.</p>';
-    const lbl = { pendiente: 'Esperando transferencia', pagado: 'Pagado', enviado: 'Enviado', entregado: 'Entregado ✓' };
-    return `<div class="mt-6 space-y-3">${this.pedidos.map(p => { const e = p.envio || {}; return `<div class="border rounded-2xl p-4 text-sm"><div class="flex flex-wrap justify-between gap-2"><b>MX-${String(p.numero).padStart(5, '0')} · ${this.esc(p.nombre || p.email)}</b><span>${lbl[p.estado] || p.estado} · ${new Date(p.creado).toLocaleDateString('es-AR')}</span></div>
-      <p class="text-neutral-600 mt-1">${p.items.map(i => i.qty + 'x ' + this.esc(i.nombre)).join(' · ')} — ${Store.fmt(p.total)}</p>
-      <p class="text-neutral-600">${this.esc(e.direccion)}, ${this.esc(e.localidad)} (${this.esc(e.cp)}) · ${this.esc(e.carrier || '')} ${this.esc(e.servicio || '')} · Tel: ${this.esc(p.telefono)}${e.dni ? ' · DNI: ' + this.esc(e.dni) : ''}${e.ubicacion && e.ubicacion.url ? ` · <a class="underline" target="_blank" rel="noopener" href="${this.esc(e.ubicacion.url)}">Ver ubicación en Google Maps</a>` : ''}${e.piso ? '<br>Piso/depto: ' + this.esc(e.piso) : ''}${e.notas ? '<br><i>Notas: ' + this.esc(e.notas) + '</i>' : ''}</p>
-      <div class="mt-2 flex flex-wrap gap-2">${e.foto ? `<button onclick="Admin.verFoto(${p.numero})" class="border border-black rounded-full px-3 py-1">Ver foto del domicilio</button>` : ''}${p.estado === 'pendiente' ? `<button onclick="Admin.estadoPedido(${p.numero},'pagado')" class="bg-black text-white rounded-full px-3 py-1">Confirmar pago recibido</button>` : ''}${p.estado === 'pagado' ? `<button onclick="Admin.abrirEnvio(${p.numero})" class="border border-black rounded-full px-3 py-1">Marcar enviado</button>` : ''}
-      ${p.estado !== 'entregado' && p.estado !== 'pendiente' ? `<button onclick="Admin.estadoPedido(${p.numero},'entregado')" class="bg-black text-white rounded-full px-3 py-1">Marcar entregado</button>` : ''}</div></div>`; }).join('')}</div>`;
-  },
-  resenasView() {
-    if (!this.resenas) return '<p class="mt-6 text-neutral-500">Cargando reseñas…</p>';
-    if (!this.resenas.length) return '<p class="mt-6 text-neutral-500">Todavía no hay reseñas.</p>';
-    const ord = { pendiente: 0, publicada: 1, oculta: 2 }, l = this.resenas.slice().sort((a, b) => ord[a.estado] - ord[b.estado]);
-    return `<div class="mt-6 space-y-3">${l.map(r => { const pr = Store.find(r.sku); return `<div class="border rounded-2xl p-4 text-sm ${r.estado === 'pendiente' ? 'border-black' : ''}"><div class="flex flex-wrap justify-between gap-2"><b>${this.esc(pr ? pr.nombre : r.sku)}</b><span>${r.estado === 'pendiente' ? 'POR REVISAR' : r.estado === 'publicada' ? 'Publicada' : 'Oculta'}</span></div>
-      <p class="mt-1"><span class="text-amber-500">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span> ${this.esc(r.nombre)} · pedido MX-${String(r.pedido_numero).padStart(5, '0')}</p>
-      ${r.comentario ? `<p class="mt-1 text-neutral-700">${this.esc(r.comentario)}</p>` : '<p class="mt-1 text-neutral-400">(sin comentario)</p>'}
-      <div class="mt-2 flex gap-2">${r.estado !== 'publicada' ? `<button onclick="Admin.moderar('${r.id}','publicada')" class="bg-black text-white rounded-full px-3 py-1">Publicar</button>` : ''}${r.estado !== 'oculta' ? `<button onclick="Admin.moderar('${r.id}','oculta')" class="border border-red-700 text-red-700 rounded-full px-3 py-1">Ocultar</button>` : ''}</div></div>`; }).join('')}</div>`;
-  },
-  async estadoPedido(numero, estado) { if (!confirm(estado === 'pagado' ? '¿Ya viste la plata en tu cuenta? Se marca como pagado y se le envía el comprobante al cliente.' : '¿Marcar el pedido como ' + estado + '?')) return; const j = await this.call('pedido_estado', { numero, estado }); if (j) { if (j.mail) alert('Mail al cliente: ' + (j.mail === 'enviado' ? 'enviado ✓' : 'NO se envió. Motivo: ' + j.mail)); this.loadPedidos(); } },
-  envModal: null,
-  abrirEnvio(numero) { this.envModal = { numero }; App.render(); setTimeout(() => { const i = document.getElementById('env_emp'); if (i) i.focus(); }, 50); },
-  cerrarEnvio() { this.envModal = null; App.render(); },
-  envioModal() {
-    if (!this.envModal) return '';
-    const n = this.envModal.numero, ref = 'MX-' + String(n).padStart(5, '0'), cls = 'w-full border border-neutral-300 rounded-xl px-3 py-2 text-sm';
-    return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="Admin.cerrarEnvio()"></div>
-    <form onsubmit="return Admin.confirmarEnvio(event)" class="relative bg-white rounded-3xl max-w-md w-full p-6 space-y-3">
-      <h3 class="text-xl font-black">Despachar pedido ${ref}</h3>
-      <p class="text-sm text-neutral-600">Cargá los datos del envío. Al tocar <b>Finalizado</b> se marca como enviado y el cliente recibe el mail con estos datos.</p>
-      <label class="block text-sm font-semibold">Empresa de envío
-        <input id="env_emp" list="env_lista" required maxlength="60" placeholder="Elegí o escribí la empresa" class="${cls} mt-1 font-normal">
-        <datalist id="env_lista"><option value="Correo Argentino"><option value="Andreani"><option value="Vía Cargo"><option value="OCA"><option value="Moto / entrega propia"></datalist></label>
-      <label class="block text-sm font-semibold">Número de seguimiento
-        <input id="env_seg" required maxlength="60" placeholder="Ej. 3600001234567" class="${cls} mt-1 font-normal"></label>
-      <div class="flex gap-2 pt-1"><button type="button" onclick="Admin.cerrarEnvio()" class="flex-1 border border-neutral-400 rounded-full py-3 font-semibold">Cancelar</button>
-        <button id="env_btn" class="flex-1 bg-black text-white rounded-full py-3 font-semibold">Finalizado</button></div></form></div>`;
-  },
-  async confirmarEnvio(ev) {
-    ev.preventDefault();
-    const emp = document.getElementById('env_emp').value.trim(), seg = document.getElementById('env_seg').value.trim(), btn = document.getElementById('env_btn');
-    if (!emp || !seg) { alert('Completá la empresa y el número de seguimiento.'); return false; }
-    btn.disabled = true; btn.textContent = 'Enviando…';
-    const j = await this.call('pedido_estado', { numero: this.envModal.numero, estado: 'enviado', empresa: emp, seguimiento: seg });
-    if (!j) { btn.disabled = false; btn.textContent = 'Finalizado'; return false; }
-    this.envModal = null;
-    if (j.mail) alert('Mail al cliente: ' + (j.mail === 'enviado' ? 'enviado ✓' : 'NO se envió. Motivo: ' + j.mail));
-    this.loadPedidos();
-    return false;
-  },
-  async moderar(id, estado) { const j = await this.call('resena_estado', { id, estado }); if (j) this.loadResenas(); },
-  async call(accion, data = {}) {
-    try {
-      const r = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-password': this.pw }, body: JSON.stringify({ accion, ...data }) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) { alert(j.error || 'Esto solo funciona con la web publicada en Vercel.'); return null; }
-      return j;
-    } catch (e) { alert('No hay conexión con el servidor.'); return null; }
-  },
-  async refresh() { await Store.load(); App.render(); },
-  login(e) { e.preventDefault(); this.pw = new FormData(e.target).get('pw'); this.call('ping').then(j => { if (j) sessionStorage.setItem('mx_pw', this.pw); else this.pw = ''; App.render(); if (this.pw) this.loadResenas(); }); return false; },
-  logout() { this.pw = ''; sessionStorage.removeItem('mx_pw'); App.render(); },
-  async file(f) { if (!f) return; try { this.pending = await Excel.parse(f); } catch (e) { alert('No se pudo leer el archivo. Usá la plantilla.'); } App.render(); },
-  async confirm() { const j = await this.call('importar', { rows: this.pending.ok, mantenerStock: document.getElementById('ks').checked }); if (j) { this.pending = null; alert(j.cantidad + ' productos guardados.'); this.refresh(); } },
-  async seed() { if (!confirm('Se cargan los productos de ejemplo (pisan los que tengan el mismo SKU).')) return; const j = await this.call('sembrar', { rows: window.CATALOG_SEED }); if (j) this.refresh(); },
-  async setStock(sku) {
-    const p = Store.find(sku);
-    if (Store.conColor(p)) {   // stock por color: se cargan las cantidades de todos los colores, ej. Negro:5,Blanco:0
-      const v = prompt('Stock por color de ' + p.nombre + '\nEscribí cada color con su cantidad, separados por coma:', Excel.textoStockColores(p.stock_colores)); if (v === null) return;
-      const r = Excel.stockColores(v); if (r.error || !r.ok) { alert(r.error || 'Escribí al menos un color con su cantidad, por ejemplo Negro:5'); return; }
-      const j = await this.call('stock', { sku, stock_colores: r.ok }); if (j) this.refresh(); return;
+// Escrituras del catálogo. Requiere la variable ADMIN_PASSWORD en Vercel.
+// Comparación en tiempo constante (sin módulos de Node, para que corra en Cloudflare)
+const iguales = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+const fallos = new Map();   // ip -> { n, hasta }   (en memoria: frena la fuerza bruta, pero cada instancia de Vercel lleva su propia cuenta)
+module.exports = async (req, res) => {
+  const E = process.env;
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x', f = fallos.get(ip) || { n: 0, hasta: 0 };
+  if (f.hasta > Date.now()) return res.status(429).json({ error: 'Demasiados intentos. Esperá unos minutos.' });
+  const pw = String(req.headers['x-admin-password'] || ''), real = E.ADMIN_PASSWORD || '';
+  const ok = real && pw.length === real.length && iguales(pw, real);
+  if (!ok) { f.n += 1; if (f.n >= 5) { f.n = 0; f.hasta = Date.now() + 15 * 60 * 1000; } fallos.set(ip, f); await new Promise(r => setTimeout(r, 800)); return res.status(401).json({ error: 'Contraseña incorrecta.' }); }
+  fallos.delete(ip);
+  const H = { apikey: E.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${E.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  const T = `${E.SUPABASE_URL}/rest/v1/productos`;
+  const { accion, rows, sku, stock, mantenerStock, numero, estado, id, empresa, seguimiento } = req.body || {};
+  const P = `${E.SUPABASE_URL}/rest/v1/pedidos`, R = `${E.SUPABASE_URL}/rest/v1/resenas`;
+  // Stock por color: {"Negro":5,"Blanco":0}. Devuelve null si el producto no maneja stock por color.
+  const colorStock = o => {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    const out = {};
+    for (const [k, v] of Object.entries(o)) { const c = String(k).trim().replace(/\s+/g, ' ').slice(0, 40); if (c && Object.keys(out).length < 30) out[c] = Math.max(0, parseInt(v, 10) || 0); }
+    return Object.keys(out).length ? out : null;
+  };
+  const suma = o => Object.values(o).reduce((a, n) => a + n, 0);
+  const faltaSql = 'Falta correr el archivo supabase/stock_colores.sql en Supabase (SQL Editor > Run). Es un paso que se hace una sola vez.';
+  const clean = r => { const sc = colorStock(r.stock_colores); return ({
+    sku: String(r.sku || '').trim(), nombre: String(r.nombre || '').trim(), categoria: r.categoria || '', marca: r.marca || '',
+    descripcion: r.descripcion || '', especificaciones: r.especificaciones || '',
+    precio_final: Number(r.precio_final) || 0, precio_lista: Number(r.precio_lista) || Number(r.precio_final) || 0,
+    precio_usd: Number(r.precio_usd) > 0 ? Number(r.precio_usd) : null,
+    peso_g: parseInt(r.peso_g, 10) > 0 ? parseInt(r.peso_g, 10) : null, alto_cm: parseInt(r.alto_cm, 10) > 0 ? parseInt(r.alto_cm, 10) : null,
+    ancho_cm: parseInt(r.ancho_cm, 10) > 0 ? parseInt(r.ancho_cm, 10) : null, largo_cm: parseInt(r.largo_cm, 10) > 0 ? parseInt(r.largo_cm, 10) : null,
+    stock: sc ? suma(sc) : Math.max(0, parseInt(r.stock, 10) || 0), imagen: r.imagen || '', imagenes: r.imagenes || [],
+    colores: sc ? Object.keys(sc) : (r.colores || []), stock_colores: sc, almacenamiento: r.almacenamiento || [], destacado: !!r.destacado, oferta: !!r.oferta, etiqueta: r.etiqueta || ''
+  }); };
+  const up = lote => fetch(`${T}?on_conflict=sku`, { method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(lote) });
+  try {
+    if (accion === 'ping') return res.status(200).json({ ok: true });
+    if (accion === 'importar' || accion === 'sembrar') {
+      const m = new Map();
+      (rows || []).map(clean).filter(r => r.sku && r.nombre && r.precio_final > 0).forEach(r => m.set(r.sku, r));
+      const list = [...m.values()];
+      if (!list.length) return res.status(400).json({ error: 'No hay productos válidos.' });
+      let filas = list;
+      if (mantenerStock && accion === 'importar') {
+        // "Mantener el stock actual": los productos que ya existen conservan su stock. Con stock por color, cada color que ya existía
+        // conserva sus unidades; un color nuevo entra con la cantidad del Excel y un color que ya no está en el Excel se quita.
+        const exR = await fetch(`${T}?select=sku,stock_colores`, { headers: H });
+        if (!exR.ok) return res.status(500).json({ error: faltaSql });
+        const db = new Map((await exR.json()).map(x => [x.sku, colorStock(x.stock_colores)]));
+        filas = list.map(r => {
+          if (!db.has(r.sku)) return r;                                   // producto nuevo: todo del Excel
+          const d = db.get(r.sku), x = r.stock_colores;
+          if (d && x) { const m = {}; for (const c of Object.keys(x)) m[c] = Object.prototype.hasOwnProperty.call(d, c) ? d[c] : x[c]; return { ...r, stock_colores: m, colores: Object.keys(m), stock: suma(m) }; }
+          if (!d && x) return r;                                          // primera vez con stock por color: usa las cantidades del Excel
+          const { stock, ...resto } = r; return resto;                    // sin stock por color en el Excel: se conserva el stock actual
+        });
+      }
+      // PostgREST pide que todos los productos de un mismo envío tengan los mismos campos: se agrupan por forma.
+      const grupos = new Map(); filas.forEach(r => { const k = Object.keys(r).sort().join(','); (grupos.get(k) || grupos.set(k, []).get(k)).push(r); });
+      for (const lote of grupos.values()) {
+        const rr = await up(lote);
+        if (!rr.ok) { const t = await rr.text().catch(() => ''); return res.status(500).json({ error: /stock_colores/.test(t) ? faltaSql : 'No se pudo guardar en la base de datos.' }); }
+      }
+      return res.status(200).json({ ok: true, cantidad: list.length });
     }
-    const v = prompt('Nuevo stock para ' + p.nombre, p.stock); if (v === null) return;
-    const j = await this.call('stock', { sku, stock: parseInt(v, 10) || 0 }); if (j) this.refresh();
-  },
-  async del(sku) { if (!confirm('¿Eliminar este producto?')) return; const j = await this.call('eliminar', { sku }); if (j) this.refresh(); }
+    if (accion === 'stock') {
+      // Producto con stock por color: se cargan las cantidades de cada color. Producto común: un solo número.
+      const sc = colorStock(req.body.stock_colores);
+      const cur = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}&select=stock_colores`, { headers: H });
+      const actual = cur.ok ? colorStock(((await cur.json())[0] || {}).stock_colores) : null;
+      let cambio;
+      if (sc) cambio = { stock_colores: sc, colores: Object.keys(sc), stock: suma(sc) };
+      else if (actual) return res.status(400).json({ error: 'Este producto maneja el stock por color. Cargá las cantidades de cada color, por ejemplo Negro:5,Blanco:2.' });
+      else cambio = { stock: Math.max(0, parseInt(stock, 10) || 0) };
+      const r = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}`, { method: 'PATCH', headers: H, body: JSON.stringify({ ...cambio, actualizado: new Date().toISOString() }) });
+      return r.ok ? res.status(200).json({ ok: true }) : res.status(500).json({ error: 'No se pudo cambiar el stock.' });
+    }
+    if (accion === 'eliminar') {
+      const r = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}`, { method: 'DELETE', headers: H });
+      return r.ok ? res.status(200).json({ ok: true }) : res.status(500).json({ error: 'No se pudo eliminar.' });
+    }
+    // ---- Pedidos: lista de los pagados / enviados / entregados y cambio de estado ----
+    if (accion === 'pedidos') {
+      const r = await fetch(`${P}?select=numero,nombre,email,telefono,items,total,envio,metodo,estado,creado&or=(estado.in.(pagado,enviado,entregado),and(estado.eq.pendiente,metodo.eq.transferencia))&order=creado.desc&limit=100`, { headers: H });
+      return r.ok ? res.status(200).json({ ok: true, pedidos: await r.json() }) : res.status(500).json({ error: 'No se pudieron leer los pedidos.' });
+    }
+    if (accion === 'pedido_estado') {
+      const n = parseInt(numero, 10);
+      // pagado: solo transferencias pendientes (confirmación manual). enviado / entregado: pedidos ya pagados.
+      const regla = { pagado: 'estado=eq.pendiente&metodo=eq.transferencia', enviado: 'estado=eq.pagado', entregado: 'estado=in.(pagado,enviado)' }[estado];
+      if (!regla || !n) return res.status(400).json({ error: 'Datos inválidos.' });
+      const cambio = { estado };
+      if (estado === 'enviado') {
+        // Al despachar hay que cargar la empresa y el número de seguimiento: quedan guardados en el pedido y van en el mail.
+        const emp = String(empresa || '').trim().replace(/\s+/g, ' ').slice(0, 60), seg = String(seguimiento || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+        if (!emp || !seg) return res.status(400).json({ error: 'Completá la empresa de envío y el número de seguimiento.' });
+        if (!/^[\w\-./ ]+$/.test(seg)) return res.status(400).json({ error: 'El número de seguimiento solo puede tener letras, números, guiones, puntos o barras.' });
+        const cur = await fetch(`${P}?numero=eq.${n}&select=envio`, { headers: H });
+        const actual = cur.ok ? (((await cur.json())[0] || {}).envio || {}) : {};
+        cambio.envio = { ...actual, despacho: { empresa: emp, seguimiento: seg, fecha: new Date().toISOString() } };
+      }
+      const r = await fetch(`${P}?numero=eq.${n}&${regla}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(cambio) });
+      if (!r.ok) return res.status(500).json({ error: 'No se pudo cambiar el estado.' });
+      const filas = await r.json();
+      if (!filas.length) return res.status(409).json({ error: 'El pedido no estaba en un estado que permita ese cambio.' });
+      // Mail al cliente: al confirmar el pago (comprobante) y al marcar enviado (pedido en camino). El resultado vuelve al panel.
+      let mail = '';
+      if (estado === 'pagado' || estado === 'enviado') {
+        try { const M = require('./_mail'); const ok = estado === 'pagado' ? await M.comprobante(filas[0], false) : await M.enviado(filas[0]); mail = ok ? 'enviado' : (M.ultimo || 'no se pudo enviar'); }
+        catch (e) { mail = 'ERROR: ' + ((e && e.message) || e); }
+      }
+      return res.status(200).json({ ok: true, mail });
+    }
+    // ---- Foto del domicilio: enlace temporal (10 minutos) ----
+    if (accion === 'foto_url') {
+      const n = parseInt(numero, 10);
+      const r = await fetch(`${P}?numero=eq.${n}&select=envio`, { headers: H });
+      const f = r.ok ? (((await r.json())[0] || {}).envio || {}).foto : '';
+      if (!/^MX-\d{5,}\.jpg$/.test(String(f || ''))) return res.status(404).json({ error: 'Este pedido no tiene foto.' });
+      const url = await require('./_foto').url(f, 600);
+      return url ? res.status(200).json({ ok: true, url }) : res.status(502).json({ error: 'No se pudo abrir la foto.' });
+    }
+    // ---- Reseñas: lista y moderación ----
+    if (accion === 'resenas') {
+      const r = await fetch(`${R}?select=id,pedido_numero,sku,nombre,estrellas,comentario,estado,creado&order=creado.desc&limit=200`, { headers: H });
+      return r.ok ? res.status(200).json({ ok: true, resenas: await r.json() }) : res.status(500).json({ error: 'No se pudieron leer las reseñas.' });
+    }
+    if (accion === 'resena_estado') {
+      if (!/^[0-9a-f-]{36}$/i.test(String(id || '')) || !['publicada', 'oculta', 'pendiente'].includes(estado)) return res.status(400).json({ error: 'Datos inválidos.' });
+      const r = await fetch(`${R}?id=eq.${id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ estado }) });
+      return r.ok ? res.status(200).json({ ok: true }) : res.status(500).json({ error: 'No se pudo actualizar la reseña.' });
+    }
+    return res.status(400).json({ error: 'Acción desconocida.' });
+  } catch (e) { return res.status(500).json({ error: 'Error del servidor.' }); }
 };

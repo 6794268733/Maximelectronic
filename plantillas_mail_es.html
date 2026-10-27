@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mails de registro en español – MAXIMELECTRONIC</title>
+<style>
+:root{--fondo:#f5f5f3;--tarjeta:#fff;--texto:#161616;--suave:#5f5f5f;--linea:#dcdcd8;--acento:#e8710a;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--fondo:#141414;--tarjeta:#1f1f1f;--texto:#f0f0ee;--suave:#a5a5a0;--linea:#383838}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:20px 14px 60px}
+main{max-width:760px;margin:auto}
+h1{font-size:26px;margin:6px 0 4px} h2{font-size:20px;margin:34px 0 8px} h3{font-size:18px;margin:0 0 2px}
+p,li{max-width:68ch} .meta{color:var(--suave);font-size:14px;margin:0 0 12px}
+.card{background:var(--tarjeta);border:1px solid var(--linea);border-radius:14px;padding:18px;margin:16px 0}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+input,textarea{width:100%;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--fondo);color:var(--texto);border:1px solid var(--linea);border-radius:8px;padding:9px}
+textarea{resize:vertical}
+.fila{display:flex;gap:8px} .fila input{font:15px system-ui,sans-serif}
+button{cursor:pointer;border:1px solid var(--texto);background:transparent;color:var(--texto);border-radius:999px;padding:9px 16px;font:600 14px system-ui,sans-serif;white-space:nowrap}
+button.principal{margin-top:10px;background:var(--texto);color:var(--fondo)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--acento);outline-offset:2px}
+.aviso{border-left:4px solid var(--acento);background:var(--tarjeta);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0}
+table{border-collapse:collapse;width:100%;margin:10px 0} td{border-bottom:1px solid var(--linea);padding:7px 6px;vertical-align:top} td:first-child{color:var(--suave);width:38%}
+code{background:var(--tarjeta);border:1px solid var(--linea);border-radius:5px;padding:1px 5px;font-size:.92em}
+</style></head><body><main>
+<h1>Mails de registro en español</h1>
+<p class="meta">Estos mails los manda Supabase (el sistema de cuentas), no el código de la tienda. Se cambian desde el panel de Supabase, en 3 pasos.</p>
+
+<div class="aviso"><b>Antes de empezar, algo importante.</b> Con la configuración de fábrica, Supabase solo entrega mails a las personas del equipo del proyecto (vos) y manda como máximo 2 por hora. Eso significa que los clientes reales <b>no recibirían</b> el mail de confirmación al registrarse. Por eso el paso 1 conecta tu Gmail como remitente: es gratis y, además, desbloquea la edición de los textos.</div>
+
+<h2>Paso 1 · Conectar tu Gmail para que los mails lleguen a cualquier cliente</h2>
+<ol>
+<li>En tu cuenta de Google (<b>maximelectronic1@gmail.com</b>) entrá a Seguridad y activá la <b>verificación en dos pasos</b>, si no la tenés.</li>
+<li>Después buscá <b>Contraseñas de aplicaciones</b> (podés entrar directo a <code>myaccount.google.com/apppasswords</code>). Creá una con el nombre “Supabase”. Google te muestra una clave de 16 letras: copiala, la vas a necesitar una sola vez.</li>
+<li>En Supabase: <b>Authentication</b> → <b>Emails</b> → <b>SMTP Settings</b> → activá <b>Enable custom SMTP</b> y completá:</li>
+</ol>
+<table>
+<tr><td>Sender email</td><td><code>maximelectronic1@gmail.com</code></td></tr>
+<tr><td>Sender name</td><td><code>MAXIMELECTRONIC</code></td></tr>
+<tr><td>Host</td><td><code>smtp.gmail.com</code></td></tr>
+<tr><td>Port number</td><td><code>465</code></td></tr>
+<tr><td>Username</td><td><code>maximelectronic1@gmail.com</code></td></tr>
+<tr><td>Password</td><td>la clave de 16 letras del paso anterior (sin espacios)</td></tr>
+<tr><td>Minimum interval per user</td><td>dejá el valor que viene (60 segundos)</td></tr>
+</table>
+<p>Guardá. Supabase sube solo el límite a unos 30 mails por hora; si tenés muchos registros, se puede ampliar en <b>Authentication → Rate Limits</b>.</p>
+
+<h2>Paso 2 · Que el enlace de confirmación vuelva a tu tienda</h2>
+<p>En Supabase: <b>Authentication</b> → <b>URL Configuration</b>. En <b>Site URL</b> poné <code>https://maximelectronic.pages.dev</code> y guardá. Si usás otro dominio en el futuro, cambialo acá.</p>
+
+<h2>Paso 3 · Pegar los textos en español</h2>
+<p>En Supabase: <b>Authentication</b> → <b>Emails</b> → <b>Templates</b>. Tocá cada plantilla, pegá el <b>asunto</b> y el <b>cuerpo</b> de abajo y guardá. Los códigos entre llaves, como <code>{{ .ConfirmationURL }}</code>, no se tocan: Supabase los reemplaza por el enlace real.</p>
+<p class="meta">La más importante es “Confirm signup”. Las demás conviene dejarlas listas por si algún día las usás.</p>
+
+<section class="card">
+<h3>Confirmar registro (el que le llega a quien crea una cuenta)</h3>
+<p class="meta">En Supabase se llama: <b>Confirm signup</b></p>
+<label>Asunto</label>
+<div class="fila"><input id="a0" readonly value="Confirmá tu cuenta en MAXIMELECTRONIC"><button onclick="copiar('a0',this)">Copiar asunto</button></div>
+<label>Cuerpo del mail</label>
+<textarea id="c0" readonly rows="7">&lt;div style=&quot;font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;padding:24px;color:#111&quot;&gt;
+&lt;p style=&quot;font-size:20px;font-weight:bold;letter-spacing:.5px;margin:0 0 18px&quot;&gt;MAXIM&lt;span style=&quot;font-weight:normal&quot;&gt;ELECTRONIC&lt;/span&gt;&lt;/p&gt;
+&lt;h2 style=&quot;margin:0 0 14px;font-size:22px&quot;&gt;¡Bienvenido a MAXIMELECTRONIC!&lt;/h2&gt;
+&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Gracias por registrarte. Para activar tu cuenta y poder comprar, confirmá tu correo electrónico tocando el botón.&lt;/p&gt;&lt;p style=&quot;text-align:center;margin:26px 0&quot;&gt;&lt;a href=&quot;{{ .ConfirmationURL }}&quot; style=&quot;background:#000;color:#fff;text-decoration:none;padding:13px 30px;border-radius:999px;font-weight:bold;display:inline-block&quot;&gt;Confirmar mi correo&lt;/a&gt;&lt;/p&gt;&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5&quot;&gt;Si el botón no funciona, copiá y pegá este enlace en tu navegador:&lt;br&gt;&lt;span style=&quot;word-break:break-all&quot;&gt;{{ .ConfirmationURL }}&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5;margin-top:22px&quot;&gt;Si no creaste una cuenta en MAXIMELECTRONIC, ignorá este mensaje.&lt;/p&gt;
+&lt;p style=&quot;font-size:12px;color:#999;margin-top:18px&quot;&gt;MAXIMELECTRONIC · Compra online, sin vueltas&lt;/p&gt;
+&lt;/div&gt;</textarea>
+<button onclick="copiar('c0',this)" class="principal">Copiar cuerpo</button>
+</section>
+<section class="card">
+<h3>Restablecer contraseña</h3>
+<p class="meta">En Supabase se llama: <b>Reset password</b></p>
+<label>Asunto</label>
+<div class="fila"><input id="a1" readonly value="Restablecé tu contraseña de MAXIMELECTRONIC"><button onclick="copiar('a1',this)">Copiar asunto</button></div>
+<label>Cuerpo del mail</label>
+<textarea id="c1" readonly rows="7">&lt;div style=&quot;font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;padding:24px;color:#111&quot;&gt;
+&lt;p style=&quot;font-size:20px;font-weight:bold;letter-spacing:.5px;margin:0 0 18px&quot;&gt;MAXIM&lt;span style=&quot;font-weight:normal&quot;&gt;ELECTRONIC&lt;/span&gt;&lt;/p&gt;
+&lt;h2 style=&quot;margin:0 0 14px;font-size:22px&quot;&gt;Cambiá tu contraseña&lt;/h2&gt;
+&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Recibimos un pedido para cambiar la contraseña de tu cuenta. Tocá el botón para elegir una nueva.&lt;/p&gt;&lt;p style=&quot;text-align:center;margin:26px 0&quot;&gt;&lt;a href=&quot;{{ .ConfirmationURL }}&quot; style=&quot;background:#000;color:#fff;text-decoration:none;padding:13px 30px;border-radius:999px;font-weight:bold;display:inline-block&quot;&gt;Elegir nueva contraseña&lt;/a&gt;&lt;/p&gt;&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5&quot;&gt;Si el botón no funciona, copiá y pegá este enlace en tu navegador:&lt;br&gt;&lt;span style=&quot;word-break:break-all&quot;&gt;{{ .ConfirmationURL }}&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5;margin-top:22px&quot;&gt;Si no pediste el cambio, ignorá este mensaje: tu contraseña actual sigue funcionando.&lt;/p&gt;
+&lt;p style=&quot;font-size:12px;color:#999;margin-top:18px&quot;&gt;MAXIMELECTRONIC · Compra online, sin vueltas&lt;/p&gt;
+&lt;/div&gt;</textarea>
+<button onclick="copiar('c1',this)" class="principal">Copiar cuerpo</button>
+</section>
+<section class="card">
+<h3>Enlace para ingresar sin contraseña</h3>
+<p class="meta">En Supabase se llama: <b>Magic link</b></p>
+<label>Asunto</label>
+<div class="fila"><input id="a2" readonly value="Tu enlace para ingresar a MAXIMELECTRONIC"><button onclick="copiar('a2',this)">Copiar asunto</button></div>
+<label>Cuerpo del mail</label>
+<textarea id="c2" readonly rows="7">&lt;div style=&quot;font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;padding:24px;color:#111&quot;&gt;
+&lt;p style=&quot;font-size:20px;font-weight:bold;letter-spacing:.5px;margin:0 0 18px&quot;&gt;MAXIM&lt;span style=&quot;font-weight:normal&quot;&gt;ELECTRONIC&lt;/span&gt;&lt;/p&gt;
+&lt;h2 style=&quot;margin:0 0 14px;font-size:22px&quot;&gt;Ingresá a tu cuenta&lt;/h2&gt;
+&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Tocá el botón para entrar a tu cuenta de MAXIMELECTRONIC. El enlace sirve una sola vez y vence en poco tiempo.&lt;/p&gt;&lt;p style=&quot;text-align:center;margin:26px 0&quot;&gt;&lt;a href=&quot;{{ .ConfirmationURL }}&quot; style=&quot;background:#000;color:#fff;text-decoration:none;padding:13px 30px;border-radius:999px;font-weight:bold;display:inline-block&quot;&gt;Ingresar a mi cuenta&lt;/a&gt;&lt;/p&gt;&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5&quot;&gt;Si el botón no funciona, copiá y pegá este enlace en tu navegador:&lt;br&gt;&lt;span style=&quot;word-break:break-all&quot;&gt;{{ .ConfirmationURL }}&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5;margin-top:22px&quot;&gt;Si no fuiste vos, ignorá este mensaje: no se hace ningún cambio.&lt;/p&gt;
+&lt;p style=&quot;font-size:12px;color:#999;margin-top:18px&quot;&gt;MAXIMELECTRONIC · Compra online, sin vueltas&lt;/p&gt;
+&lt;/div&gt;</textarea>
+<button onclick="copiar('c2',this)" class="principal">Copiar cuerpo</button>
+</section>
+<section class="card">
+<h3>Cambio de correo electrónico</h3>
+<p class="meta">En Supabase se llama: <b>Change email address</b></p>
+<label>Asunto</label>
+<div class="fila"><input id="a3" readonly value="Confirmá tu nuevo correo en MAXIMELECTRONIC"><button onclick="copiar('a3',this)">Copiar asunto</button></div>
+<label>Cuerpo del mail</label>
+<textarea id="c3" readonly rows="7">&lt;div style=&quot;font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;padding:24px;color:#111&quot;&gt;
+&lt;p style=&quot;font-size:20px;font-weight:bold;letter-spacing:.5px;margin:0 0 18px&quot;&gt;MAXIM&lt;span style=&quot;font-weight:normal&quot;&gt;ELECTRONIC&lt;/span&gt;&lt;/p&gt;
+&lt;h2 style=&quot;margin:0 0 14px;font-size:22px&quot;&gt;Confirmá tu nuevo correo&lt;/h2&gt;
+&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Pediste cambiar el correo de tu cuenta de &lt;b&gt;{{ .Email }}&lt;/b&gt; a &lt;b&gt;{{ .NewEmail }}&lt;/b&gt;.&lt;/p&gt;&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Tocá el botón para confirmar el cambio.&lt;/p&gt;&lt;p style=&quot;text-align:center;margin:26px 0&quot;&gt;&lt;a href=&quot;{{ .ConfirmationURL }}&quot; style=&quot;background:#000;color:#fff;text-decoration:none;padding:13px 30px;border-radius:999px;font-weight:bold;display:inline-block&quot;&gt;Confirmar el cambio&lt;/a&gt;&lt;/p&gt;&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5&quot;&gt;Si el botón no funciona, copiá y pegá este enlace en tu navegador:&lt;br&gt;&lt;span style=&quot;word-break:break-all&quot;&gt;{{ .ConfirmationURL }}&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5;margin-top:22px&quot;&gt;Si no pediste este cambio, ignorá este mensaje.&lt;/p&gt;
+&lt;p style=&quot;font-size:12px;color:#999;margin-top:18px&quot;&gt;MAXIMELECTRONIC · Compra online, sin vueltas&lt;/p&gt;
+&lt;/div&gt;</textarea>
+<button onclick="copiar('c3',this)" class="principal">Copiar cuerpo</button>
+</section>
+<section class="card">
+<h3>Invitación a la tienda</h3>
+<p class="meta">En Supabase se llama: <b>Invite user</b></p>
+<label>Asunto</label>
+<div class="fila"><input id="a4" readonly value="Te invitaron a MAXIMELECTRONIC"><button onclick="copiar('a4',this)">Copiar asunto</button></div>
+<label>Cuerpo del mail</label>
+<textarea id="c4" readonly rows="7">&lt;div style=&quot;font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;padding:24px;color:#111&quot;&gt;
+&lt;p style=&quot;font-size:20px;font-weight:bold;letter-spacing:.5px;margin:0 0 18px&quot;&gt;MAXIM&lt;span style=&quot;font-weight:normal&quot;&gt;ELECTRONIC&lt;/span&gt;&lt;/p&gt;
+&lt;h2 style=&quot;margin:0 0 14px;font-size:22px&quot;&gt;Te invitaron a MAXIMELECTRONIC&lt;/h2&gt;
+&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Te invitaron a crear una cuenta. Tocá el botón para aceptar la invitación y elegir tu contraseña.&lt;/p&gt;&lt;p style=&quot;text-align:center;margin:26px 0&quot;&gt;&lt;a href=&quot;{{ .ConfirmationURL }}&quot; style=&quot;background:#000;color:#fff;text-decoration:none;padding:13px 30px;border-radius:999px;font-weight:bold;display:inline-block&quot;&gt;Aceptar la invitación&lt;/a&gt;&lt;/p&gt;&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5&quot;&gt;Si el botón no funciona, copiá y pegá este enlace en tu navegador:&lt;br&gt;&lt;span style=&quot;word-break:break-all&quot;&gt;{{ .ConfirmationURL }}&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5;margin-top:22px&quot;&gt;Si no esperabas esta invitación, ignorá este mensaje.&lt;/p&gt;
+&lt;p style=&quot;font-size:12px;color:#999;margin-top:18px&quot;&gt;MAXIMELECTRONIC · Compra online, sin vueltas&lt;/p&gt;
+&lt;/div&gt;</textarea>
+<button onclick="copiar('c4',this)" class="principal">Copiar cuerpo</button>
+</section>
+<section class="card">
+<h3>Código de seguridad (para confirmar cambios sensibles)</h3>
+<p class="meta">En Supabase se llama: <b>Reauthentication</b></p>
+<label>Asunto</label>
+<div class="fila"><input id="a5" readonly value="Tu código de seguridad de MAXIMELECTRONIC"><button onclick="copiar('a5',this)">Copiar asunto</button></div>
+<label>Cuerpo del mail</label>
+<textarea id="c5" readonly rows="7">&lt;div style=&quot;font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;padding:24px;color:#111&quot;&gt;
+&lt;p style=&quot;font-size:20px;font-weight:bold;letter-spacing:.5px;margin:0 0 18px&quot;&gt;MAXIM&lt;span style=&quot;font-weight:normal&quot;&gt;ELECTRONIC&lt;/span&gt;&lt;/p&gt;
+&lt;h2 style=&quot;margin:0 0 14px;font-size:22px&quot;&gt;Tu código de seguridad&lt;/h2&gt;
+&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;Ingresá este código para confirmar la operación:&lt;/p&gt;&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;&lt;span style=&quot;font-size:30px;font-weight:bold;letter-spacing:6px&quot;&gt;{{ .Token }}&lt;/span&gt;&lt;/p&gt;&lt;p style=&quot;margin:0 0 14px;line-height:1.5&quot;&gt;El código vence en pocos minutos. No lo compartas con nadie.&lt;/p&gt;
+&lt;p style=&quot;font-size:13px;color:#666;line-height:1.5;margin-top:22px&quot;&gt;Si no fuiste vos, ignorá este mensaje.&lt;/p&gt;
+&lt;p style=&quot;font-size:12px;color:#999;margin-top:18px&quot;&gt;MAXIMELECTRONIC · Compra online, sin vueltas&lt;/p&gt;
+&lt;/div&gt;</textarea>
+<button onclick="copiar('c5',this)" class="principal">Copiar cuerpo</button>
+</section>
+
+<h2>Probarlo</h2>
+<p>Creá una cuenta nueva en la tienda con un mail tuyo que no sea maximelectronic1 (por ejemplo uno de Hotmail o Yahoo). Tiene que llegar el mail en español, con el botón negro “Confirmar mi correo”. Si llega a spam la primera vez, marcalo como “No es spam”.</p>
+</main>
+<script>
+function copiar(id, btn) {
+  const el = document.getElementById(id);
+  el.select(); el.setSelectionRange(0, 999999);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  if (!ok && navigator.clipboard) { navigator.clipboard.writeText(el.value); ok = true; }
+  const t = btn.textContent; btn.textContent = ok ? 'Copiado ✓' : 'Seleccioná y copiá a mano';
+  setTimeout(() => { btn.textContent = t; }, 1800);
+}
+</script></body></html>
