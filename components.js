@@ -189,6 +189,20 @@ C.auth = mode => `
   <input name="password" type="password" required minlength="6" placeholder="Contraseña (mínimo 6 caracteres)" class="${C.inp}">
   <p id="aerr" class="text-sm text-red-700"></p>
   <button class="w-full bg-black text-white rounded-full py-3 font-semibold">${mode === 'registro' ? 'Crear cuenta' : 'Ingresar'}</button></form></div>`;
+// Pantalla que se muestra después de registrarse: avisa que hay que confirmar el mail y que puede estar en spam.
+C.authListo = email => `
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
+<div class="relative bg-white rounded-3xl max-w-md w-full p-6 space-y-4 text-center">
+  <div class="text-5xl">✉️</div>
+  <h2 class="text-2xl font-bold">¡Revisá tu mail!</h2>
+  <p class="text-neutral-700">Te mandamos un mail a <b class="break-all">${C.esc(email)}</b> para confirmar tu cuenta. Tocá el botón <b>“Confirmar mi correo”</b> y listo.</p>
+  <div class="bg-amber-50 border border-amber-300 rounded-2xl p-3 text-sm text-left text-neutral-800">
+    <b>¿No lo ves en unos minutos?</b><br>Mirá la carpeta de <b>Spam o Correo no deseado</b> (en Gmail, también <b>Promociones</b>). Si está ahí, abrilo y tocá <b>“No es spam”</b> para que los próximos te lleguen a la bandeja principal.
+  </div>
+  <p class="text-xs text-neutral-500">Si ya tenías una cuenta con este mail, no hace falta confirmar nada: ingresá con tu contraseña.</p>
+  <button type="button" onclick="Auth.modal('ingreso')" class="w-full bg-black text-white rounded-full py-3 font-semibold">Ya confirmé, ingresar</button>
+  <button type="button" onclick="App.close()" class="w-full border rounded-full py-2 text-sm">Cerrar</button>
+</div></div>`;
 C.totales = () => {
   const s = Checkout.sel, usd = Store.totalUsd();
   return `<div class="text-sm flex justify-between"><span>Productos</span><span>${usd ? Store.fmtUsd(usd) + ' · ' : ''}${Store.fmt(Store.total())}</span></div>

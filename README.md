@@ -140,3 +140,7 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 
 ## Mails de cuenta (registro, contraseña) en español
 - Esos mails los manda Supabase, no este código. `supabase/plantillas_mail_es.html` es una página (abrila en el navegador) con los textos en español listos para copiar y los pasos: conectar Gmail como SMTP (sin eso Supabase solo entrega a los miembros del equipo y con tope de 2 por hora), Site URL y pegar cada plantilla.
+
+## Registro: aviso de revisar spam
+- Al crear la cuenta, el cliente ve una pantalla "¡Revisá tu mail!" que le dice que mire Spam/Promociones y toque "No es spam" (los mails salen de un Gmail común y pueden caer ahí). Botón "Ya confirmé, ingresar".
+- Los errores más comunes de Supabase (mail o contraseña incorrectos, mail sin confirmar, demasiados intentos) se muestran en español (`Auth.msg` en `public/js/auth.js`).
