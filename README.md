@@ -144,3 +144,14 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 ## Registro: aviso de revisar spam
 - Al crear la cuenta, el cliente ve una pantalla "¡Revisá tu mail!" que le dice que mire Spam/Promociones y toque "No es spam" (los mails salen de un Gmail común y pueden caer ahí). Botón "Ya confirmé, ingresar".
 - Los errores más comunes de Supabase (mail o contraseña incorrectos, mail sin confirmar, demasiados intentos) se muestran en español (`Auth.msg` en `public/js/auth.js`).
+
+## Páginas de información (pie de página)
+- Los textos están en `public/js/components.js`, dentro de `C.pages`. Aceptan HTML simple (`<p>`, `<b>`, enlaces). Los datos de contacto (WhatsApp, mail, horario, ciudad) salen de `public/js/config.js`; `C.contacto.botones` agrega los botones de WhatsApp y mail.
+- Redactadas: Conócenos, Preguntas frecuentes (envío y medios de pago), Contacto, Servicios corporativos, Políticas de privacidad, Condiciones de financiación y Términos y condiciones.
+- Siguen con texto de relleno: Garantías y Servicio técnico.
+
+## Términos y condiciones y registro
+- El texto completo está en `public/js/terminos.js` (se carga después de `components.js`). Incluye el derecho de arrepentimiento (sección 9, plazo legal de 10 días corridos, art. 34 de la Ley 24.240) y la cláusula del precinto de fábrica abierto (reintegro a valor de reventa). El enlace "Botón de arrepentimiento" ya no está en el pie de página: la Res. 424/2020 pide un enlace de acceso fácil y directo desde la página de inicio; si se quiere volver a ponerlo, agregar `${li('Botón de arrepentimiento', ...)}` en el pie y una página con ese contenido.
+- Al registrarse hay una casilla obligatoria "Leí y acepto los Términos y condiciones". La fecha y hora de aceptación se guarda en los datos del usuario en Supabase (`terminos_aceptados`).
+- "Servicios corporativos" sigue en el pie de página, en el mismo lugar.
+- Titular: `RAZON_SOCIAL` y `CUIT` en `public/js/config.js` (salen en el pie de página y en los Términos y condiciones).

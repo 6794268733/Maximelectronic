@@ -31,7 +31,8 @@ const Auth = {
     try {
       let r;
       if (mode === 'registro') {
-        r = await this.sb.auth.signUp({ email: d.email, password: d.password, options: { data: { nombre: d.nombre, telefono: d.telefono } } });
+        if (!d.terminos) { err.textContent = 'Para crear tu cuenta tenés que aceptar los Términos y condiciones.'; return; }
+        r = await this.sb.auth.signUp({ email: d.email, password: d.password, options: { data: { nombre: d.nombre, telefono: d.telefono, terminos_aceptados: new Date().toISOString() } } });
         if (!r.error && !r.data.session) { document.getElementById('overlay').innerHTML = C.authListo(d.email); return; }
       } else r = await this.sb.auth.signInWithPassword({ email: d.email, password: d.password });
       if (r.error) { err.textContent = this.msg(r.error.message); return; }
