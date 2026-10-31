@@ -1,15 +1,40 @@
 const C = {};
 C.slides = CONFIG.SLIDES;   // se editan en js/config.js
+// Datos de contacto reutilizados en las páginas de información (salen de js/config.js)
+C.contacto = (() => {
+  const w = String(CONFIG.WHATSAPP || ''), mail = CONFIG.EMAIL || '';
+  const tel = w ? '+' + w.slice(0, 2) + ' ' + w.slice(2, 5) + ' ' + w.slice(5) : '';
+  const btn = 'inline-block rounded-full px-5 py-2.5 font-semibold text-sm';
+  return { w, tel, mail, botones: `<div class="flex flex-wrap gap-3 pt-2">${w ? `<a href="https://wa.me/${w}" target="_blank" rel="noopener" class="${btn} bg-black text-white">Escribir por WhatsApp</a>` : ''}${mail ? `<a href="mailto:${mail}" class="${btn} border border-black">Enviar un mail</a>` : ''}</div>` };
+})();
 C.pages = {
-  faq: ['Preguntas frecuentes', [['¿Hacen envíos a todo el país?', 'Sí, enviamos a toda la Argentina con ' + CONFIG.CARRIERS_TEXT + ', a domicilio o a sucursal.'], ['¿Cuánto cuesta el envío?', (CONFIG.ENVIO_GRATIS ? 'El envío es gratis a todo el país: el costo ya está incluido en el precio.' : 'El costo lo paga el comprador. Se calcula automáticamente con tu código postal antes de pagar, con la tarifa vigente de cada empresa.')], ['¿Tienen stock?', 'Sí. Todo producto publicado en la tienda está en stock.'], ['¿Qué medios de pago aceptan?', 'Tarjetas Visa, Mastercard, American Express, Cabal y Naranja.'], ['¿Tienen garantía?', 'Todos los productos tienen garantía oficial del fabricante.']]],
-  contacto: ['Contacto', 'Escribinos por WhatsApp y te respondemos a la brevedad.'],
+  faq: ['Preguntas frecuentes', [['¿Hacen envíos a todo el país?', 'Sí, enviamos a toda la Argentina con ' + CONFIG.CARRIERS_TEXT + ', a domicilio o a sucursal.'], ['¿Cuánto cuesta el envío?', (CONFIG.ENVIO_GRATIS ? 'El envío es gratis a todo el país.' : 'El costo lo paga el comprador. Se calcula automáticamente con tu código postal antes de pagar, con la tarifa vigente de cada empresa.')], ['¿Tienen stock?', 'Sí. Todo producto publicado en la tienda está en stock.'], ['¿Qué medios de pago aceptan?', 'Trabajamos con todos los medios de pago: tarjetas y transferencias bancarias.'], ['¿Tienen garantía?', 'Todos los productos tienen garantía oficial del fabricante.']]],
+  contacto: ['Contacto', `<p>Escribinos y te respondemos a la brevedad.</p>
+    <ul class="space-y-1">
+      ${C.contacto.tel ? `<li><b>WhatsApp:</b> <a class="underline" href="https://wa.me/${C.contacto.w}" target="_blank" rel="noopener">${C.contacto.tel}</a></li>` : ''}
+      ${C.contacto.mail ? `<li><b>Email:</b> <a class="underline" href="mailto:${C.contacto.mail}">${C.contacto.mail}</a></li>` : ''}
+      <li><b>Horario de atención:</b> ${CONFIG.HOURS}</li>
+      <li><b>Ubicación:</b> ${CONFIG.CITY}</li>
+    </ul>${C.contacto.botones}`],
   servicio: ['Servicio técnico', 'Texto de ejemplo: completá con la información de tu servicio técnico.'],
-  corporativo: ['Servicios corporativos', 'Texto de ejemplo: compras por volumen y facturación A para empresas.'],
-  acerca: ['Conócenos', 'MAXIMELECTRONIC es una tienda de tecnología de alta gama ubicada en Puerto Iguazú, Misiones.'],
-  arrepentimiento: ['Botón de arrepentimiento', 'Texto legal de ejemplo: reemplazar por el texto oficial.'],
+  corporativo: ['Servicios corporativos', `<p>Si tu empresa necesita comprar <b>más de cinco productos</b>, comunicate con nosotros por WhatsApp o por mail y te informamos los descuentos disponibles.</p>
+    <p>Contanos qué productos y qué cantidad necesitás, y te respondemos a la brevedad con una propuesta.</p>${C.contacto.botones}`],
+  acerca: ['Conócenos', `<p>MAXIMELECTRONIC es una tienda online de tecnología de alta gama ubicada en Puerto Iguazú, Misiones.</p>
+    <p>Trabajamos con celulares, notebooks, tablets, smartwatch, auriculares, equipos de audio HiFi y drones. Todo producto publicado en la tienda está en stock y cuenta con garantía oficial del fabricante.</p>
+    <p>Comprás desde donde estés: te registrás, elegís tus productos y pagás desde la web con tarjeta o transferencia. Hacemos envíos gratis a todo el país y te acompañamos antes y después de la compra, por WhatsApp o por mail.</p>
+    <p>Nuestro compromiso es simple: productos originales, precios claros y atención personalizada.</p>
+    <p><a class="underline font-semibold" href="#/info/contacto">Hablá con nosotros</a></p>`],
   terminos: ['Términos y condiciones', 'Texto legal de ejemplo: reemplazar por el texto oficial.'],
-  privacidad: ['Políticas de privacidad', 'Texto legal de ejemplo: reemplazar por el texto oficial.'],
-  financiacion: ['Condiciones de financiación', 'Texto legal de ejemplo: reemplazar por el texto oficial.'],
+  privacidad: ['Políticas de privacidad', `<p>En MAXIMELECTRONIC cuidamos tus datos personales. Esta política explica qué datos pedimos, para qué los usamos y cómo los protegemos.</p>
+    <p><b>Qué datos recopilamos.</b> Los que nos das al crear tu cuenta y al comprar: nombre y apellido, mail, teléfono, DNI y domicilio de entrega.</p>
+    <p><b>Para qué los usamos.</b> Únicamente para procesar tus pedidos, coordinar el envío, mandarte los comprobantes y avisos de tu compra, y atenderte si nos consultás.</p>
+    <p><b>No divulgamos tu información.</b> No vendemos, alquilamos ni compartimos tus datos con terceros. Solo los usamos con quienes son imprescindibles para completar tu compra, como la empresa de envíos y la plataforma de pagos, y cuando una autoridad competente lo exija por ley.</p>
+    <p><b>Tus pagos.</b> Los pagos con tarjeta se procesan en la plataforma de pagos. MAXIMELECTRONIC no guarda los datos de tu tarjeta.</p>
+    <p><b>Cómo los protegemos.</b> Tomamos medidas razonables para resguardar tu información y que solo acceda a ella el personal autorizado.</p>
+    <p><b>Tus derechos.</b> Podés pedirnos en cualquier momento que te mostremos, corrijamos o eliminemos tus datos, escribiéndonos por WhatsApp o por mail. Esta política se rige por la Ley 25.326 de Protección de Datos Personales; la Agencia de Acceso a la Información Pública es el organismo de control.</p>${C.contacto.botones}`],
+  financiacion: ['Condiciones de financiación', `<p>Si no contás con el efectivo completo o no tenés tarjeta de crédito, podés acceder a una financiación a través de plataformas de crédito personal.</p>
+    <p>La financiación está sujeta a la aprobación de la plataforma elegida. Las tasas, los plazos y los requisitos los define cada plataforma, no MAXIMELECTRONIC.</p>
+    <p>Si querés más información, escribinos y te orientamos.</p>${C.contacto.botones}`],
   garantias: ['Garantías', 'Texto legal de ejemplo: reemplazar por el texto oficial.']
 };
 C.header = () => `
@@ -125,8 +150,8 @@ C.footer = () => {
   return `<footer class="glass-dark text-neutral-300 mt-8"><div class="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-4 gap-8 text-sm">
   <div><p class="text-white font-black text-lg">MAXIM<span class="font-light">ELECTRONIC</span></p>
     <div class="flex gap-3 mt-4">${Object.keys(icons).map(k => `<a ${CONFIG.SOCIAL[k] ? `href="${CONFIG.SOCIAL[k]}" target="_blank" rel="noopener"` : 'class="opacity-30 pointer-events-none"'} aria-label="${k}"><i data-lucide="${icons[k]}"></i></a>`).join('')}</div></div>
-  <div><p class="text-white font-semibold mb-2">Información</p><p>${CONFIG.HOURS}</p><p>${CONFIG.ADDRESS || 'Puerto Iguazú, Misiones'}</p><p>WhatsApp +54 375 4400392</p>${CONFIG.EMAIL ? `<p>${CONFIG.EMAIL}</p>` : ''}</div>
-  <div><p class="text-white font-semibold mb-2">Ayuda</p><ul class="space-y-1">${li('Conócenos', 'acerca')}${li('Preguntas frecuentes', 'faq')}${li('Botón de arrepentimiento', 'arrepentimiento')}${li('Contacto', 'contacto')}${li('Servicio técnico', 'servicio')}${li('Servicios corporativos', 'corporativo')}</ul></div>
+  <div><p class="text-white font-semibold mb-2">Información</p><p>${CONFIG.HOURS}</p><p>${CONFIG.ADDRESS || 'Puerto Iguazú, Misiones'}</p><p>WhatsApp +54 375 4400392</p>${CONFIG.EMAIL ? `<p>${CONFIG.EMAIL}</p>` : ''}${CONFIG.RAZON_SOCIAL ? `<p>${CONFIG.RAZON_SOCIAL}${CONFIG.CUIT ? ' · CUIT ' + CONFIG.CUIT : ''}</p>` : ''}</div>
+  <div><p class="text-white font-semibold mb-2">Ayuda</p><ul class="space-y-1">${li('Conócenos', 'acerca')}${li('Preguntas frecuentes', 'faq')}${li('Contacto', 'contacto')}${li('Servicio técnico', 'servicio')}${li('Servicios corporativos', 'corporativo')}</ul></div>
   <div><p class="text-white font-semibold mb-2">Legales</p><ul class="space-y-1">${li('Términos y condiciones', 'terminos')}${li('Políticas de privacidad', 'privacidad')}${li('Condiciones de financiación', 'financiacion')}${li('Garantías', 'garantias')}</ul></div>
   </div>
   <div class="border-t border-neutral-800 text-center text-xs py-5">Pagá con Visa · Mastercard · American Express · Cabal · Naranja &nbsp;|&nbsp; Envíos a todo el país &nbsp;|&nbsp; Sellos Data Fiscal y Defensa del Consumidor (agregar)</div></footer>`;
@@ -143,8 +168,14 @@ C.catalog = (cat, q) => {
 };
 C.page = slug => {
   const p = C.pages[slug]; if (!p) return '<p class="p-20 text-center">Página no encontrada.</p>';
-  const body = Array.isArray(p[1]) ? p[1].map((f, i) => `<div class="border-b border-neutral-300 py-3"><button class="w-full text-left font-semibold flex justify-between" onclick="this.nextElementSibling.classList.toggle('active')">${f[0]}<i data-lucide="plus"></i></button><div class="accordion-content text-neutral-600"><p class="pt-2">${f[1]}</p></div></div>`).join('') : `<p class="text-neutral-600">${p[1]}</p>`;
+  const body = Array.isArray(p[1]) ? p[1].map((f, i) => `<div class="border-b border-neutral-300 py-3"><button class="w-full text-left font-semibold flex justify-between" onclick="this.nextElementSibling.classList.toggle('active')">${f[0]}<i data-lucide="plus"></i></button><div class="accordion-content text-neutral-600"><p class="pt-2">${f[1]}</p></div></div>`).join('') : `<div class="space-y-4 text-neutral-600 leading-relaxed">${p[1].includes('<') ? p[1] : '<p>' + p[1] + '</p>'}</div>`;
   return `<section class="max-w-3xl mx-auto px-4 py-14"><h2 class="text-3xl font-black mb-6">${p[0]}</h2>${body}</section>`;
+};
+// Opciones de color: con stock por color, los colores agotados se ven pero no se pueden elegir
+C.colorOpts = p => {
+  if (!Store.conColor(p)) return p.colores.map(c => `<option>${C.esc(c)}</option>`).join('');
+  const primero = p.colores.find(c => Store.stockDe(p, c) > 0);
+  return p.colores.map(c => { const n = Store.stockDe(p, c); return n > 0 ? `<option value="${C.esc(c)}" ${c === primero ? 'selected' : ''}>${C.esc(c)}</option>` : `<option value="${C.esc(c)}" disabled>${C.esc(c)} (agotado)</option>`; }).join('');
 };
 C.modal = p => `
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
@@ -153,10 +184,9 @@ C.modal = p => `
   <div class="p-6"><button onclick="App.close()" class="float-right" aria-label="Cerrar"><i data-lucide="x"></i></button>
     <p class="text-xs text-neutral-500">${p.marca} · ${p.categoria}</p><h3 class="text-2xl font-black mt-1">${p.nombre}</h3><p class="text-xs text-neutral-500">Ref: ${p.sku}</p>
     <div class="mt-3">${C.price(p, true)}</div>
-    ${p.garantia ? '<p class="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-green-700"><i data-lucide="shield-check" class="w-4 h-4"></i> Con garantía</p>' : ''}
     <div class="mt-2">${C.rate(p.sku)}</div>
     <p class="mt-4 text-sm text-neutral-600">${p.descripcion || ''}</p><p class="mt-2 text-sm text-neutral-600">${p.especificaciones || ''}</p>
-    ${(p.colores || []).length ? `<select id="vc" class="mt-4 w-full border rounded-full px-3 py-2 text-sm">${p.colores.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
+    ${(p.colores || []).length ? `<select id="vc" class="mt-4 w-full border rounded-full px-3 py-2 text-sm">${C.colorOpts(p)}</select>` : ''}
     ${(p.almacenamiento || []).length ? `<select id="va" class="mt-2 w-full border rounded-full px-3 py-2 text-sm">${p.almacenamiento.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
     <button ${p.stock > 0 ? '' : 'disabled'} onclick="App.addModal('${p.sku}')" class="mt-5 w-full rounded-full py-3 font-semibold ${p.stock > 0 ? 'bg-black text-white' : 'bg-neutral-300 text-neutral-500'}">${p.stock > 0 ? 'Agregar al carrito' : 'Sin stock'}</button>
     ${Store.reviewsOf(p.sku).length ? `<div class="mt-6 border-t pt-4"><p class="font-black text-sm mb-2">Opiniones de clientes</p><div class="space-y-3 max-h-56 overflow-auto">${Store.reviewsOf(p.sku).slice(0, 20).map(x => `<div class="text-sm"><span class="text-amber-500">${C.stars(x.estrellas)}</span> <b>${C.esc(x.nombre)}</b>${x.comentario ? `<p class="text-neutral-600">${C.esc(x.comentario)}</p>` : ''}</div>`).join('')}</div></div>` : ''}
@@ -182,8 +212,23 @@ C.auth = mode => `
   <input name="email" type="email" required placeholder="Email" class="${C.inp}">
   ${mode === 'registro' ? `<input name="telefono" type="tel" required minlength="8" placeholder="Teléfono (ej. 3754 123456)" class="${C.inp}">` : ''}
   <input name="password" type="password" required minlength="6" placeholder="Contraseña (mínimo 6 caracteres)" class="${C.inp}">
+  ${mode === 'registro' ? `<label class="flex items-start gap-2 text-sm text-neutral-700"><input type="checkbox" name="terminos" required class="mt-1 w-4 h-4 shrink-0"><span>Leí y acepto los <a href="#/info/terminos" target="_blank" rel="noopener" class="underline font-semibold">Términos y condiciones</a>.</span></label>` : ''}
   <p id="aerr" class="text-sm text-red-700"></p>
   <button class="w-full bg-black text-white rounded-full py-3 font-semibold">${mode === 'registro' ? 'Crear cuenta' : 'Ingresar'}</button></form></div>`;
+// Pantalla que se muestra después de registrarse: avisa que hay que confirmar el mail y que puede estar en spam.
+C.authListo = email => `
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
+<div class="relative bg-white rounded-3xl max-w-md w-full p-6 space-y-4 text-center">
+  <div class="text-5xl">✉️</div>
+  <h2 class="text-2xl font-bold">¡Revisá tu mail!</h2>
+  <p class="text-neutral-700">Te mandamos un mail a <b class="break-all">${C.esc(email)}</b> para confirmar tu cuenta. Tocá el botón <b>“Confirmar mi correo”</b> y listo.</p>
+  <div class="bg-amber-50 border border-amber-300 rounded-2xl p-3 text-sm text-left text-neutral-800">
+    <b>¿No lo ves en unos minutos?</b><br>Mirá la carpeta de <b>Spam o Correo no deseado</b> (en Gmail, también <b>Promociones</b>). Si está ahí, abrilo y tocá <b>“No es spam”</b> para que los próximos te lleguen a la bandeja principal.
+  </div>
+  <p class="text-xs text-neutral-500">Si ya tenías una cuenta con este mail, no hace falta confirmar nada: ingresá con tu contraseña.</p>
+  <button type="button" onclick="Auth.modal('ingreso')" class="w-full bg-black text-white rounded-full py-3 font-semibold">Ya confirmé, ingresar</button>
+  <button type="button" onclick="App.close()" class="w-full border rounded-full py-2 text-sm">Cerrar</button>
+</div></div>`;
 C.totales = () => {
   const s = Checkout.sel, usd = Store.totalUsd();
   return `<div class="text-sm flex justify-between"><span>Productos</span><span>${usd ? Store.fmtUsd(usd) + ' · ' : ''}${Store.fmt(Store.total())}</span></div>

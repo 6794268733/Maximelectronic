@@ -2,11 +2,13 @@
 window.CONFIG = {
   STORE_NAME: 'MAXIMELECTRONIC',
   OWNER: 'Cristian Wrubel',
+  RAZON_SOCIAL: 'Cristian Wrubel',      // titular de la tienda (se muestra en el pie de página y en los Términos y condiciones)
+  CUIT: '20-35006000-7',
   WHATSAPP: '543754400392',            // formato internacional sin + ni espacios
   CITY: 'Puerto Iguazú, Misiones, Argentina',
   ADDRESS: '',                          // completar con la dirección exacta: el mapa se actualiza solo
   HOURS: 'Lunes a Viernes de 10 a 18:30 hs',
-  EMAIL: '',
+  EMAIL: 'maximelectronic1@gmail.com',
   ANNOUNCEMENT: 'Comprá online con tu cuenta | Envío gratis a todo el país',
   STOCK_NOTICE: 'TODO PRODUCTO PUBLICADO ESTÁ EN STOCK · No hace falta consultar disponibilidad',   // cartel de arriba de todo
   CARRIERS_TEXT: 'Correo Argentino, Andreani y Vía Cargo',   // se usa en las preguntas frecuentes
