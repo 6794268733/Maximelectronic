@@ -155,3 +155,8 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 - Al registrarse hay una casilla obligatoria "Leí y acepto los Términos y condiciones". La fecha y hora de aceptación se guarda en los datos del usuario en Supabase (`terminos_aceptados`).
 - "Servicios corporativos" sigue en el pie de página, en el mismo lugar.
 - Titular: `RAZON_SOCIAL` y `CUIT` en `public/js/config.js` (salen en el pie de página y en los Términos y condiciones).
+
+## Reseñas con foto y avisos en la cuenta
+- Reseñas: el cliente puede subir una foto opcional del producto. Se reduce a JPEG en el navegador, `/api/resena` la valida y la guarda en el bucket público `resenas` de Supabase con nombre aleatorio. Queda "por revisar" (con la foto a la vista en el panel) y se muestra recién cuando la publicás. **Hay que correr una vez `supabase/resenas_foto.sql`** en el SQL Editor (agrega la columna `foto` y crea el bucket). Hasta correrlo, las reseñas siguen funcionando, solo que sin foto.
+- El botón "Dejar reseña" en Mis pedidos es rojo con letras blancas (igual que "Ofertas").
+- Numerito rojo en el ícono de la cuenta (`Avisos` en `public/js/checkout.js`): cuenta los pedidos que cambiaron de estado (pagado, enviado, entregado, cancelado) desde la última vez que el cliente abrió "Mis pedidos". Se revisa al entrar, cada minuto y al volver a la pestaña. Se guarda en el navegador de cada cliente, no usa Supabase.

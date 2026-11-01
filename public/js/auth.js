@@ -5,7 +5,7 @@ const Auth = {
     this.sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
     const { data } = await this.sb.auth.getSession();
     this.session = data.session; this.user = data.session ? data.session.user : null;
-    this.sb.auth.onAuthStateChange((ev, s) => { this.session = s; this.user = s ? s.user : null; if (ev === 'SIGNED_OUT') App.render(); });
+    this.sb.auth.onAuthStateChange((ev, s) => { this.session = s; this.user = s ? s.user : null; if (ev === 'SIGNED_OUT') App.render(); if (typeof Avisos !== 'undefined') setTimeout(() => Avisos.revisar(), 0); });
   },
   ready() { return !!this.sb; },
   // Traduce los errores más comunes de Supabase (vienen en inglés) a mensajes claros para el cliente.

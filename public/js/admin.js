@@ -22,11 +22,11 @@ const Admin = {
       <input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="Admin.file(this.files[0])"></label>
     ${pv ? `<div class="mt-6"><p class="font-semibold">Vista previa: ${pv.ok.length} productos válidos, ${pv.errors.length} con errores</p>
       ${pv.errors.map(e => `<p class="text-sm text-red-700">Fila ${e.fila}: ${e.motivo}</p>`).join('')}
-      <div class="overflow-x-auto mt-3"><table class="text-sm w-full">${pv.ok.slice(0, 15).map(p => `<tr class="border-b"><td class="py-1 pr-3">${p.sku}</td><td class="pr-3">${p.nombre}</td><td class="pr-3">${p.categoria}</td><td class="pr-3">${p.precio_usd ? Store.fmtUsd(p.precio_usd) + ' · ' : ''}${Store.fmt(p.precio_final)}</td><td>${p.stock}</td></tr>`).join('')}</table></div>
-      <label class="block mt-3 text-sm"><input type="checkbox" id="ks" checked> Mantener el stock actual de los productos que ya existen (recomendado)</label>
+      <div class="overflow-x-auto mt-3"><table class="text-sm w-full">${pv.ok.slice(0, 15).map(p => `<tr class="border-b"><td class="py-1 pr-3">${p.sku}</td><td class="pr-3">${p.nombre}</td><td class="pr-3">${p.categoria}</td><td class="pr-3">${p.precio_usd ? Store.fmtUsd(p.precio_usd) + ' · ' : ''}${Store.fmt(p.precio_final)}</td><td>${p.stock}${p.stock_colores ? ' (' + Excel.textoStockColores(p.stock_colores).replace(/,/g, ', ') + ')' : ''}</td></tr>`).join('')}</table></div>
+      <label class="block mt-3 text-sm"><input type="checkbox" id="ks" checked> Mantener el stock actual de los productos que ya existen, también el de cada color (recomendado)</label>
       <button onclick="Admin.confirm()" class="mt-3 bg-black text-white rounded-full px-6 py-2 font-semibold">Confirmar importación</button></div>` : ''}
     <h3 class="text-xl font-black mt-10 mb-3">Productos (${Store.all.length})</h3>
-    <div class="overflow-x-auto"><table class="text-sm w-full">${Store.all.map(p => `<tr class="border-b"><td class="py-2 pr-3">${p.sku}</td><td class="pr-3">${p.nombre}</td><td class="pr-3">${p.categoria}</td><td class="pr-3">${p.precio_usd ? Store.fmtUsd(p.precio_usd) + ' · ' : ''}${Store.fmt(p.precio_final)}</td><td class="pr-3">Stock: ${p.stock}</td>
+    <div class="overflow-x-auto"><table class="text-sm w-full">${Store.all.map(p => `<tr class="border-b"><td class="py-2 pr-3">${p.sku}</td><td class="pr-3">${p.nombre}</td><td class="pr-3">${p.categoria}</td><td class="pr-3">${p.precio_usd ? Store.fmtUsd(p.precio_usd) + ' · ' : ''}${Store.fmt(p.precio_final)}</td><td class="pr-3">Stock: ${p.stock}${Store.conColor(p) ? '<br><span class="text-xs text-neutral-600">' + Excel.textoStockColores(p.stock_colores).replace(/,/g, ' · ').replace(/:/g, ' ') + '</span>' : ''}</td>
       <td><button class="underline mr-3" onclick="Admin.setStock('${p.sku}')">Cambiar stock</button><button class="underline text-red-700" onclick="Admin.del('${p.sku}')">Eliminar</button></td></tr>`).join('')}</table></div>`}</section>`;
   },
 
@@ -53,6 +53,7 @@ const Admin = {
     return `<div class="mt-6 space-y-3">${l.map(r => { const pr = Store.find(r.sku); return `<div class="border rounded-2xl p-4 text-sm ${r.estado === 'pendiente' ? 'border-black' : ''}"><div class="flex flex-wrap justify-between gap-2"><b>${this.esc(pr ? pr.nombre : r.sku)}</b><span>${r.estado === 'pendiente' ? 'POR REVISAR' : r.estado === 'publicada' ? 'Publicada' : 'Oculta'}</span></div>
       <p class="mt-1"><span class="text-amber-500">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span> ${this.esc(r.nombre)} · pedido MX-${String(r.pedido_numero).padStart(5, '0')}</p>
       ${r.comentario ? `<p class="mt-1 text-neutral-700">${this.esc(r.comentario)}</p>` : '<p class="mt-1 text-neutral-400">(sin comentario)</p>'}
+      ${r.foto ? `<a href="${Store.fotoUrl(r.foto)}" target="_blank" rel="noopener"><img src="${Store.fotoUrl(r.foto)}" alt="Foto de la reseña" class="mt-2 rounded-xl max-h-44"></a>` : ''}
       <div class="mt-2 flex gap-2">${r.estado !== 'publicada' ? `<button onclick="Admin.moderar('${r.id}','publicada')" class="bg-black text-white rounded-full px-3 py-1">Publicar</button>` : ''}${r.estado !== 'oculta' ? `<button onclick="Admin.moderar('${r.id}','oculta')" class="border border-red-700 text-red-700 rounded-full px-3 py-1">Ocultar</button>` : ''}</div></div>`; }).join('')}</div>`;
   },
   async estadoPedido(numero, estado) { if (!confirm(estado === 'pagado' ? '¿Ya viste la plata en tu cuenta? Se marca como pagado y se le envía el comprobante al cliente.' : '¿Marcar el pedido como ' + estado + '?')) return; const j = await this.call('pedido_estado', { numero, estado }); if (j) { if (j.mail) alert('Mail al cliente: ' + (j.mail === 'enviado' ? 'enviado ✓' : 'NO se envió. Motivo: ' + j.mail)); this.loadPedidos(); } },
@@ -101,6 +102,15 @@ const Admin = {
   async file(f) { if (!f) return; try { this.pending = await Excel.parse(f); } catch (e) { alert('No se pudo leer el archivo. Usá la plantilla.'); } App.render(); },
   async confirm() { const j = await this.call('importar', { rows: this.pending.ok, mantenerStock: document.getElementById('ks').checked }); if (j) { this.pending = null; alert(j.cantidad + ' productos guardados.'); this.refresh(); } },
   async seed() { if (!confirm('Se cargan los productos de ejemplo (pisan los que tengan el mismo SKU).')) return; const j = await this.call('sembrar', { rows: window.CATALOG_SEED }); if (j) this.refresh(); },
-  async setStock(sku) { const p = Store.find(sku), v = prompt('Nuevo stock para ' + p.nombre, p.stock); if (v === null) return; const j = await this.call('stock', { sku, stock: parseInt(v, 10) || 0 }); if (j) this.refresh(); },
+  async setStock(sku) {
+    const p = Store.find(sku);
+    if (Store.conColor(p)) {   // stock por color: se cargan las cantidades de todos los colores, ej. Negro:5,Blanco:0
+      const v = prompt('Stock por color de ' + p.nombre + '\nEscribí cada color con su cantidad, separados por coma:', Excel.textoStockColores(p.stock_colores)); if (v === null) return;
+      const r = Excel.stockColores(v); if (r.error || !r.ok) { alert(r.error || 'Escribí al menos un color con su cantidad, por ejemplo Negro:5'); return; }
+      const j = await this.call('stock', { sku, stock_colores: r.ok }); if (j) this.refresh(); return;
+    }
+    const v = prompt('Nuevo stock para ' + p.nombre, p.stock); if (v === null) return;
+    const j = await this.call('stock', { sku, stock: parseInt(v, 10) || 0 }); if (j) this.refresh();
+  },
   async del(sku) { if (!confirm('¿Eliminar este producto?')) return; const j = await this.call('eliminar', { sku }); if (j) this.refresh(); }
 };

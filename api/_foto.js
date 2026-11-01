@@ -13,8 +13,8 @@ module.exports = {
     const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     return u;
   },
-  async subir(nombre, bytes) {
-    const r = await fetch(`${E.SUPABASE_URL}/storage/v1/object/domicilios/${nombre}`, { method: 'POST', headers: { ...H(), 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: bytes });
+  async subir(nombre, bytes, bucket) {
+    const r = await fetch(`${E.SUPABASE_URL}/storage/v1/object/${bucket || 'domicilios'}/${nombre}`, { method: 'POST', headers: { ...H(), 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: bytes });
     return r.ok;
   },
   async url(nombre, segundos) {

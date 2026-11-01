@@ -15,16 +15,25 @@ module.exports = async (req, res) => {
   const T = `${E.SUPABASE_URL}/rest/v1/productos`;
   const { accion, rows, sku, stock, mantenerStock, numero, estado, id, empresa, seguimiento } = req.body || {};
   const P = `${E.SUPABASE_URL}/rest/v1/pedidos`, R = `${E.SUPABASE_URL}/rest/v1/resenas`;
-  const clean = r => ({
+  // Stock por color: {"Negro":5,"Blanco":0}. Devuelve null si el producto no maneja stock por color.
+  const colorStock = o => {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    const out = {};
+    for (const [k, v] of Object.entries(o)) { const c = String(k).trim().replace(/\s+/g, ' ').slice(0, 40); if (c && Object.keys(out).length < 30) out[c] = Math.max(0, parseInt(v, 10) || 0); }
+    return Object.keys(out).length ? out : null;
+  };
+  const suma = o => Object.values(o).reduce((a, n) => a + n, 0);
+  const faltaSql = 'Falta correr el archivo supabase/stock_colores.sql en Supabase (SQL Editor > Run). Es un paso que se hace una sola vez.';
+  const clean = r => { const sc = colorStock(r.stock_colores); return ({
     sku: String(r.sku || '').trim(), nombre: String(r.nombre || '').trim(), categoria: r.categoria || '', marca: r.marca || '',
     descripcion: r.descripcion || '', especificaciones: r.especificaciones || '',
     precio_final: Number(r.precio_final) || 0, precio_lista: Number(r.precio_lista) || Number(r.precio_final) || 0,
     precio_usd: Number(r.precio_usd) > 0 ? Number(r.precio_usd) : null,
     peso_g: parseInt(r.peso_g, 10) > 0 ? parseInt(r.peso_g, 10) : null, alto_cm: parseInt(r.alto_cm, 10) > 0 ? parseInt(r.alto_cm, 10) : null,
     ancho_cm: parseInt(r.ancho_cm, 10) > 0 ? parseInt(r.ancho_cm, 10) : null, largo_cm: parseInt(r.largo_cm, 10) > 0 ? parseInt(r.largo_cm, 10) : null,
-    stock: Math.max(0, parseInt(r.stock, 10) || 0), imagen: r.imagen || '', imagenes: r.imagenes || [],
-    colores: r.colores || [], almacenamiento: r.almacenamiento || [], destacado: !!r.destacado, oferta: !!r.oferta, etiqueta: r.etiqueta || '', garantia: !!r.garantia
-  });
+    stock: sc ? suma(sc) : Math.max(0, parseInt(r.stock, 10) || 0), imagen: r.imagen || '', imagenes: r.imagenes || [],
+    colores: sc ? Object.keys(sc) : (r.colores || []), stock_colores: sc, almacenamiento: r.almacenamiento || [], destacado: !!r.destacado, oferta: !!r.oferta, etiqueta: r.etiqueta || ''
+  }); };
   const up = lote => fetch(`${T}?on_conflict=sku`, { method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(lote) });
   try {
     if (accion === 'ping') return res.status(200).json({ ok: true });
@@ -33,18 +42,39 @@ module.exports = async (req, res) => {
       (rows || []).map(clean).filter(r => r.sku && r.nombre && r.precio_final > 0).forEach(r => m.set(r.sku, r));
       const list = [...m.values()];
       if (!list.length) return res.status(400).json({ error: 'No hay productos válidos.' });
-      let nuevos = list, existentes = [];
+      let filas = list;
       if (mantenerStock && accion === 'importar') {
-        const ex = await (await fetch(`${T}?select=sku`, { headers: H })).json();
-        const set = new Set(ex.map(x => x.sku));
-        nuevos = list.filter(r => !set.has(r.sku));
-        existentes = list.filter(r => set.has(r.sku)).map(({ stock, ...rest }) => rest);
+        // "Mantener el stock actual": los productos que ya existen conservan su stock. Con stock por color, cada color que ya existía
+        // conserva sus unidades; un color nuevo entra con la cantidad del Excel y un color que ya no está en el Excel se quita.
+        const exR = await fetch(`${T}?select=sku,stock_colores`, { headers: H });
+        if (!exR.ok) return res.status(500).json({ error: faltaSql });
+        const db = new Map((await exR.json()).map(x => [x.sku, colorStock(x.stock_colores)]));
+        filas = list.map(r => {
+          if (!db.has(r.sku)) return r;                                   // producto nuevo: todo del Excel
+          const d = db.get(r.sku), x = r.stock_colores;
+          if (d && x) { const m = {}; for (const c of Object.keys(x)) m[c] = Object.prototype.hasOwnProperty.call(d, c) ? d[c] : x[c]; return { ...r, stock_colores: m, colores: Object.keys(m), stock: suma(m) }; }
+          if (!d && x) return r;                                          // primera vez con stock por color: usa las cantidades del Excel
+          const { stock, ...resto } = r; return resto;                    // sin stock por color en el Excel: se conserva el stock actual
+        });
       }
-      for (const lote of [nuevos, existentes]) if (lote.length && !(await up(lote)).ok) return res.status(500).json({ error: 'No se pudo guardar en la base de datos.' });
+      // PostgREST pide que todos los productos de un mismo envío tengan los mismos campos: se agrupan por forma.
+      const grupos = new Map(); filas.forEach(r => { const k = Object.keys(r).sort().join(','); (grupos.get(k) || grupos.set(k, []).get(k)).push(r); });
+      for (const lote of grupos.values()) {
+        const rr = await up(lote);
+        if (!rr.ok) { const t = await rr.text().catch(() => ''); return res.status(500).json({ error: /stock_colores/.test(t) ? faltaSql : 'No se pudo guardar en la base de datos.' }); }
+      }
       return res.status(200).json({ ok: true, cantidad: list.length });
     }
     if (accion === 'stock') {
-      const r = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}`, { method: 'PATCH', headers: H, body: JSON.stringify({ stock: Math.max(0, parseInt(stock, 10) || 0), actualizado: new Date().toISOString() }) });
+      // Producto con stock por color: se cargan las cantidades de cada color. Producto común: un solo número.
+      const sc = colorStock(req.body.stock_colores);
+      const cur = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}&select=stock_colores`, { headers: H });
+      const actual = cur.ok ? colorStock(((await cur.json())[0] || {}).stock_colores) : null;
+      let cambio;
+      if (sc) cambio = { stock_colores: sc, colores: Object.keys(sc), stock: suma(sc) };
+      else if (actual) return res.status(400).json({ error: 'Este producto maneja el stock por color. Cargá las cantidades de cada color, por ejemplo Negro:5,Blanco:2.' });
+      else cambio = { stock: Math.max(0, parseInt(stock, 10) || 0) };
+      const r = await fetch(`${T}?sku=eq.${encodeURIComponent(sku)}`, { method: 'PATCH', headers: H, body: JSON.stringify({ ...cambio, actualizado: new Date().toISOString() }) });
       return r.ok ? res.status(200).json({ ok: true }) : res.status(500).json({ error: 'No se pudo cambiar el stock.' });
     }
     if (accion === 'eliminar') {
@@ -78,7 +108,7 @@ module.exports = async (req, res) => {
       // Mail al cliente: al confirmar el pago (comprobante) y al marcar enviado (pedido en camino). El resultado vuelve al panel.
       let mail = '';
       if (estado === 'pagado' || estado === 'enviado') {
-        try { const M = require('./_mail'); const ok = estado === 'pagado' ? await M.comprobante(filas[0]) : await M.enviado(filas[0]); mail = ok ? 'enviado' : (M.ultimo || 'no se pudo enviar'); }
+        try { const M = require('./_mail'); const ok = estado === 'pagado' ? await M.comprobante(filas[0], false) : await M.enviado(filas[0]); mail = ok ? 'enviado' : (M.ultimo || 'no se pudo enviar'); }
         catch (e) { mail = 'ERROR: ' + ((e && e.message) || e); }
       }
       return res.status(200).json({ ok: true, mail });
@@ -94,7 +124,9 @@ module.exports = async (req, res) => {
     }
     // ---- Reseñas: lista y moderación ----
     if (accion === 'resenas') {
-      const r = await fetch(`${R}?select=id,pedido_numero,sku,nombre,estrellas,comentario,estado,creado&order=creado.desc&limit=200`, { headers: H });
+      const cols = 'id,pedido_numero,sku,nombre,estrellas,comentario,estado,creado';
+      let r = await fetch(`${R}?select=${cols},foto&order=creado.desc&limit=200`, { headers: H });
+      if (!r.ok) r = await fetch(`${R}?select=${cols}&order=creado.desc&limit=200`, { headers: H });   // todavía sin la columna foto
       return r.ok ? res.status(200).json({ ok: true, resenas: await r.json() }) : res.status(500).json({ error: 'No se pudieron leer las reseñas.' });
     }
     if (accion === 'resena_estado') {

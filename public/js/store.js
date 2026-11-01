@@ -26,13 +26,19 @@ const Store = {
   async loadReviews() {
     try {
       if (!CONFIG.SUPABASE_URL) return;
-      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/resenas?estado=eq.publicada&select=sku,nombre,estrellas,comentario,creado&order=creado.desc&limit=500`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
+      const get = cols => fetch(`${CONFIG.SUPABASE_URL}/rest/v1/resenas?estado=eq.publicada&select=${cols}&order=creado.desc&limit=500`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
+      let r = await get('sku,nombre,estrellas,comentario,creado,foto');
+      if (!r.ok) r = await get('sku,nombre,estrellas,comentario,creado');   // todavía sin la columna foto
       if (r.ok) this.reviews = await r.json();
     } catch (e) { this.reviews = []; }
   },
+  fotoUrl(n) { return n ? `${CONFIG.SUPABASE_URL}/storage/v1/object/public/resenas/${encodeURIComponent(n)}` : ''; },
   reviewsOf(sku) { return this.reviews.filter(x => x.sku === sku); },
   rating(sku) { const l = this.reviewsOf(sku); return { n: l.length, avg: l.length ? l.reduce((a, x) => a + x.estrellas, 0) / l.length : 0 }; },
   cats() { return [...new Set(this.products.map(p => p.categoria).filter(Boolean))]; },
+  // Unidades disponibles de un producto (o de un color, si el producto maneja stock por color)
+  conColor(p) { return !!(p && p.stock_colores && typeof p.stock_colores === 'object' && Object.keys(p.stock_colores).length); },
+  stockDe(p, color = '') { if (!p) return 0; return this.conColor(p) ? (Number(p.stock_colores[color]) || 0) : (Number(p.stock) || 0); },
   find(sku) { return this.all.find(p => p.sku === sku); },
   list({ cat, q, sort, onlyStock } = {}) {
     let l = this.products.slice();
@@ -49,13 +55,13 @@ const Store = {
   total() { return this.cart.reduce((a, i) => a + i.qty * i.precio, 0); },
   totalUsd() { return this.cart.length && this.cart.every(i => i.usd > 0) ? this.cart.reduce((a, i) => a + i.qty * i.usd, 0) : null; },
   add(sku, color = '', alm = '') {
-    const p = this.find(sku); if (!p || p.stock <= 0) return;
+    const p = this.find(sku), max = this.stockDe(p, color); if (!p || max <= 0) return;
     const it = this.cart.find(i => i.sku === sku && i.color === color && i.alm === alm);
-    if (it) it.qty = Math.min(it.qty + 1, p.stock);
+    if (it) it.qty = Math.min(it.qty + 1, max);
     else this.cart.push({ sku, nombre: p.nombre, precio: p.precio_final, usd: Number(p.precio_usd) || 0, qty: 1, color, alm });
     this.saveCart();
   },
-  qty(i, d) { const it = this.cart[i]; if (!it) return; it.qty += d; if (it.qty <= 0) this.cart.splice(i, 1); this.saveCart(); },
+  qty(i, d) { const it = this.cart[i]; if (!it) return; it.qty += d; if (d > 0) { const max = this.stockDe(this.find(it.sku), it.color); if (this.conColor(this.find(it.sku)) && it.qty > max) it.qty = Math.max(max, 1); } if (it.qty <= 0) this.cart.splice(i, 1); this.saveCart(); },
   wa(text) { return 'https://wa.me/' + CONFIG.WHATSAPP + '?text=' + encodeURIComponent(text); },
   cartMessage() {
     const l = this.cart.map(i => `• ${i.qty}x ${i.nombre}${i.color ? ' (' + i.color + (i.alm ? ', ' + i.alm : '') + ')' : ''} - ${this.fmt(i.precio * i.qty)}`);

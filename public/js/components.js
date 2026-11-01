@@ -49,7 +49,8 @@ C.header = () => `
     </nav>
     <div class="ml-auto flex items-center gap-1">
       <button onclick="App.searchOpen()" class="p-2" aria-label="Buscar productos"><i data-lucide="search"></i></button>
-      <button onclick="App.account()" class="p-2" aria-label="Mi cuenta"><i data-lucide="user"></i></button>
+      <button onclick="App.account()" class="relative p-2" aria-label="Mi cuenta"><i data-lucide="user"></i>
+        <span id="avisos" class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 items-center justify-center" style="display:${typeof Avisos !== 'undefined' && Avisos.n ? 'flex' : 'none'}">${typeof Avisos !== 'undefined' ? Avisos.txt() : ''}</span></button>
       <button onclick="App.cart(true)" class="relative p-2" aria-label="Carrito"><i data-lucide="shopping-bag"></i>
         <span id="cc" class="absolute -top-1 -right-1 bg-black text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">${Store.count()}</span></button>
     </div>
@@ -116,6 +117,7 @@ C.card = p => `
 C.featured = () => `
 <section class="max-w-7xl mx-auto px-4 py-12"><h2 class="text-2xl font-black mb-6">Productos destacados</h2>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${Store.products.filter(p => p.destacado).slice(0, 8).map(C.card).join('')}</div></section>`;
+C.fotoResena = (x, cls) => x.foto ? `<a href="${Store.fotoUrl(x.foto)}" target="_blank" rel="noopener"><img src="${Store.fotoUrl(x.foto)}" alt="Foto del producto enviada por ${C.esc(x.nombre)}" loading="lazy" class="${cls}"></a>` : '';
 C.reviews = () => {
   const l = Store.reviews.filter(x => x.comentario && x.estrellas >= 4).slice(0, 3);
   if (!l.length) return '';   // sin reseñas reales no se muestra nada (nunca reseñas inventadas)
@@ -123,7 +125,7 @@ C.reviews = () => {
   return `<section class="grad-dark text-white"><div class="max-w-7xl mx-auto px-4 py-12">
   <div class="flex flex-wrap items-center gap-4 mb-6"><h2 class="text-2xl font-black">Lo que dicen nuestros clientes</h2>
   <span class="text-sm text-neutral-300"><span class="text-amber-400">${C.stars(avg)}</span> ${avg.toFixed(1).replace('.', ',')} · ${Store.reviews.length} ${Store.reviews.length === 1 ? 'opinión' : 'opiniones'}</span></div>
-  <div class="grid md:grid-cols-3 gap-4">${l.map(r => `<div class="glass-card text-black rounded-2xl p-5"><p class="text-amber-500">${C.stars(r.estrellas)}</p><p class="mt-2">${C.esc(r.comentario)}</p><p class="mt-3 text-sm text-neutral-500">${C.esc(r.nombre)}</p></div>`).join('')}</div>
+  <div class="grid md:grid-cols-3 gap-4">${l.map(r => `<div class="glass-card text-black rounded-2xl p-5"><p class="text-amber-500">${C.stars(r.estrellas)}</p><p class="mt-2">${C.esc(r.comentario)}</p>${C.fotoResena(r, 'mt-3 rounded-xl max-h-40 w-full object-cover')}<p class="mt-3 text-sm text-neutral-500">${C.esc(r.nombre)}</p></div>`).join('')}</div>
 </div></section>`;
 };
 C.categories = () => `
@@ -189,7 +191,7 @@ C.modal = p => `
     ${(p.colores || []).length ? `<select id="vc" class="mt-4 w-full border rounded-full px-3 py-2 text-sm">${C.colorOpts(p)}</select>` : ''}
     ${(p.almacenamiento || []).length ? `<select id="va" class="mt-2 w-full border rounded-full px-3 py-2 text-sm">${p.almacenamiento.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
     <button ${p.stock > 0 ? '' : 'disabled'} onclick="App.addModal('${p.sku}')" class="mt-5 w-full rounded-full py-3 font-semibold ${p.stock > 0 ? 'bg-black text-white' : 'bg-neutral-300 text-neutral-500'}">${p.stock > 0 ? 'Agregar al carrito' : 'Sin stock'}</button>
-    ${Store.reviewsOf(p.sku).length ? `<div class="mt-6 border-t pt-4"><p class="font-black text-sm mb-2">Opiniones de clientes</p><div class="space-y-3 max-h-56 overflow-auto">${Store.reviewsOf(p.sku).slice(0, 20).map(x => `<div class="text-sm"><span class="text-amber-500">${C.stars(x.estrellas)}</span> <b>${C.esc(x.nombre)}</b>${x.comentario ? `<p class="text-neutral-600">${C.esc(x.comentario)}</p>` : ''}</div>`).join('')}</div></div>` : ''}
+    ${Store.reviewsOf(p.sku).length ? `<div class="mt-6 border-t pt-4"><p class="font-black text-sm mb-2">Opiniones de clientes</p><div class="space-y-3 max-h-56 overflow-auto">${Store.reviewsOf(p.sku).slice(0, 20).map(x => `<div class="text-sm"><span class="text-amber-500">${C.stars(x.estrellas)}</span> <b>${C.esc(x.nombre)}</b>${x.comentario ? `<p class="text-neutral-600">${C.esc(x.comentario)}</p>` : ''}${C.fotoResena(x, 'mt-1 rounded-lg max-h-28 object-cover')}</div>`).join('')}</div></div>` : ''}
   </div></div></div>`;
 C.drawer = () => `
 <div class="fixed inset-0 z-50"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
@@ -301,7 +303,7 @@ C.account = () => {
   return C.shell(`<div class="flex justify-between items-start gap-3"><div class="min-w-0"><p class="text-xs text-neutral-500">Mi cuenta</p><p class="font-black text-lg truncate">${C.esc(m.nombre || 'Mi perfil')}</p><p class="text-sm text-neutral-600 truncate">${C.esc(u.email || '')}</p></div>
   <button onclick="App.close()" aria-label="Cerrar"><i data-lucide="x"></i></button></div>
   <div class="mt-4 border-t pt-2 space-y-1">
-  ${row('package', 'Mis pedidos', 'href="#/pedidos" onclick="App.close()"')}
+  ${row('package', 'Mis pedidos' + (typeof Avisos !== 'undefined' && Avisos.n ? ` <span class="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5">${Avisos.n} ${Avisos.n === 1 ? 'novedad' : 'novedades'}</span>` : ''), 'href="#/pedidos" onclick="App.close()"')}
   ${row('map-pin', 'Mis datos para próximos pedidos', 'type="button" onclick="Auth.datos()"')}
   ${row('lock', 'Cambiar contraseña', 'type="button" onclick="Auth.passModal()"')}
   ${row('circle-help', 'Preguntas frecuentes', 'href="#/info/faq" onclick="App.close()"')}

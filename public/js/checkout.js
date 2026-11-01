@@ -64,7 +64,10 @@ const Checkout = {
       Store.cart = []; Store.saveCart(); App.upd();
       if (r.url) location.href = r.url;
       else { document.getElementById('overlay').innerHTML = C.done(r); lucide.createIcons(); }
-    } catch (x) { err.textContent = x.message; btn.disabled = false; btn.textContent = 'Confirmar pedido'; }
+    } catch (x) {
+      err.textContent = x.message; btn.disabled = false; btn.textContent = 'Confirmar pedido';
+      if (/agotó|Solo quedan|stock|color/i.test(x.message || '')) Store.load().catch(() => {});   // actualiza el stock mostrado en la tienda
+    }
   },
   // Foto opcional del domicilio: se reduce a máx. 1280 px y se convierte a JPEG antes de enviarla
   async pickFoto(inp) {
@@ -105,6 +108,7 @@ const Checkout = {
     if (!Auth.user) { el.innerHTML = '<p class="text-neutral-500">Ingresá para ver tus pedidos.</p><button onclick="Auth.modal(\'ingreso\')" class="mt-3 bg-black text-white rounded-full px-5 py-2 text-sm">Ingresar</button>'; return; }
     const { data, error } = await Auth.sb.from('pedidos').select('numero,total,estado,metodo,creado,items').order('creado', { ascending: false });
     if (error) { el.textContent = 'No se pudieron cargar los pedidos.'; return; }
+    if (typeof Avisos !== 'undefined') Avisos.marcarVistos(data);   // se borra el numerito rojo de la cuenta
     const rv = await Auth.sb.from('resenas').select('pedido_numero,sku,estrellas,estado').eq('user_id', Auth.user.id);
     const mias = {}; (rv.data || []).forEach(x => { mias[x.pedido_numero + '|' + x.sku] = x; });
     const est = { pendiente: 'En revisión', publicada: 'Publicada', oculta: 'No publicada' };
@@ -112,7 +116,7 @@ const Checkout = {
       if (p.estado !== 'entregado') return '';
       const x = mias[p.numero + '|' + i.sku];
       return x ? `<p class="text-xs mt-1 text-neutral-600">Tu reseña de ${C.esc(i.nombre)}: <span class="text-amber-500">${C.stars(x.estrellas)}</span> · ${est[x.estado] || ''}</p>`
-        : `<button onclick="Resenas.abrir(${p.numero},'${C.esc(i.sku)}')" class="mt-2 mr-2 text-xs border border-black rounded-full px-3 py-1">Dejar reseña de ${C.esc(i.nombre)}</button>`;
+        : `<button onclick="Resenas.abrir(${p.numero},'${C.esc(i.sku)}')" class="mt-2 mr-2 text-xs font-semibold bg-red-600 text-white hover:bg-red-700 rounded-full px-3 py-1.5">Dejar reseña de ${C.esc(i.nombre)}</button>`;
     };
     el.innerHTML = data.length ? data.map(p => `<div class="grad-light rounded-2xl p-4"><div class="flex justify-between"><b>Pedido MX-${String(p.numero).padStart(5, '0')}</b><span class="text-sm">${(p.estado === 'pendiente' && p.metodo === 'transferencia' ? { pendiente: 'Pago en aprobación' } : { pendiente: 'Esperando pago', pagado: 'Pagado ✓', enviado: 'Enviado', entregado: 'Entregado ✓', cancelado: 'Cancelado', vencido: 'Vencido' })[p.estado] || p.estado}</span></div>
       <p class="text-sm text-neutral-600">${p.items.map(i => i.qty + 'x ' + C.esc(i.nombre)).join(' · ')}</p><p class="font-black mt-1">${Store.fmt(p.total)}</p>
@@ -121,28 +125,89 @@ const Checkout = {
 };
 // Formulario para dejar una reseña (solo pedidos entregados; el servidor lo vuelve a verificar)
 const Resenas = {
-  est: 0, pedido: 0, sku: '',
+  est: 0, pedido: 0, sku: '', foto: '',
   abrir(pedido, sku) {
-    this.est = 0; this.pedido = pedido; this.sku = sku;
+    this.est = 0; this.pedido = pedido; this.sku = sku; this.foto = '';
     const p = Store.find(sku), nombre = p ? p.nombre : 'este producto';
     document.getElementById('overlay').innerHTML = `<div class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
     <div class="relative bg-white rounded-3xl max-w-md w-full p-6 space-y-3"><h3 class="font-black text-lg">¿Qué te pareció?</h3><p class="text-sm text-neutral-600">${C.esc(nombre)}</p>
     <div id="rstars" class="text-3xl text-amber-500 select-none">${[1, 2, 3, 4, 5].map(n => `<button type="button" onclick="Resenas.set(${n})" aria-label="${n} estrellas">☆</button>`).join('')}</div>
     <textarea id="rtxt" maxlength="1000" rows="4" placeholder="Contanos tu experiencia (opcional)" class="${C.inp}"></textarea>
+    <div class="text-sm"><label class="font-semibold">Foto del producto <span class="font-normal text-neutral-500">(opcional)</span></label>
+      <input id="rfoto" type="file" accept="image/*" onchange="Resenas.pickFoto(this)" class="mt-1 block w-full text-sm"><div id="rprev" class="mt-2"></div><p id="rferr" class="text-xs text-red-700"></p></div>
     <p id="rerr" class="text-sm text-red-700"></p>
-    <p class="text-xs text-neutral-500">Tu reseña se publica con tu nombre y la inicial del apellido, después de que la revisemos.</p>
+    <p class="text-xs text-neutral-500">Tu reseña (y tu foto, si la subís) se publica con tu nombre y la inicial del apellido, después de que la revisemos.</p>
     <button id="rbtn" onclick="Resenas.enviar()" class="w-full bg-black text-white rounded-full py-3 font-semibold">Enviar reseña</button></div></div>`;
   },
+  // La foto se reduce a máx. 1280 px y se convierte a JPEG en el navegador antes de enviarla
+  async pickFoto(inp) {
+    const f = inp.files && inp.files[0], prev = document.getElementById('rprev'), err = document.getElementById('rferr');
+    err.textContent = ''; this.foto = ''; prev.innerHTML = '';
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { err.textContent = 'El archivo tiene que ser una imagen.'; inp.value = ''; return; }
+    try {
+      const url = URL.createObjectURL(f);
+      const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+      const k = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      let q = 0.8, d = c.toDataURL('image/jpeg', q);
+      while (d.length > 1100000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+      if (d.length > 1100000) throw new Error('grande');
+      this.foto = d;
+      prev.innerHTML = `<img src="${d}" alt="Tu foto" class="rounded-xl max-h-40"><button type="button" onclick="Resenas.quitarFoto()" class="text-xs underline mt-1">Quitar foto</button>`;
+    } catch (e) { err.textContent = 'No se pudo usar esa imagen. Probá con otra.'; inp.value = ''; }
+  },
+  quitarFoto() { this.foto = ''; const i = document.getElementById('rfoto'); if (i) i.value = ''; const p = document.getElementById('rprev'); if (p) p.innerHTML = ''; },
   set(n) { this.est = n; document.querySelectorAll('#rstars button').forEach((b, i) => { b.textContent = i < n ? '★' : '☆'; }); },
   async enviar() {
     const err = document.getElementById('rerr'), btn = document.getElementById('rbtn'); err.textContent = '';
     if (!this.est) { err.textContent = 'Elegí de 1 a 5 estrellas.'; return; }
     btn.disabled = true;
     try {
-      const r = await fetch('/api/resena', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + Auth.session.access_token }, body: JSON.stringify({ pedido: this.pedido, sku: this.sku, estrellas: this.est, comentario: document.getElementById('rtxt').value }) });
+      const r = await fetch('/api/resena', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + Auth.session.access_token }, body: JSON.stringify({ pedido: this.pedido, sku: this.sku, estrellas: this.est, comentario: document.getElementById('rtxt').value, foto: this.foto }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { err.textContent = j.error || 'No se pudo enviar.'; btn.disabled = false; return; }
       App.close(); alert('¡Gracias! Tu reseña se publicará cuando la revisemos.'); Checkout.loadOrders();
     } catch (e) { err.textContent = 'No se pudo conectar. Intentá de nuevo.'; btn.disabled = false; }
   }
 };
+
+// Avisos de la cuenta: numerito rojo en el ícono del usuario cuando un pedido cambió de estado (pago confirmado, enviado, entregado, cancelado)
+// desde la última vez que el cliente miró "Mis pedidos". Se guarda en este navegador, por cliente: no necesita nada en Supabase.
+const Avisos = {
+  n: 0,
+  key() { return Auth.user ? 'mx_avisos_' + Auth.user.id : null; },
+  leer() { try { const k = this.key(); return k ? JSON.parse(localStorage.getItem(k) || 'null') : null; } catch (e) { return null; } },
+  guardar(m) { try { const k = this.key(); if (k) localStorage.setItem(k, JSON.stringify(m)); } catch (e) { /* sin almacenamiento: no se avisa */ } },
+  txt() { return this.n > 9 ? '9+' : String(this.n || ''); },
+  set(n) {
+    this.n = n;
+    const el = document.getElementById('avisos'); if (el) { el.textContent = this.txt(); el.style.display = n ? 'flex' : 'none'; }
+    const b = el && el.parentElement; if (b) b.setAttribute('aria-label', n ? 'Mi cuenta, ' + n + (n === 1 ? ' novedad' : ' novedades') : 'Mi cuenta');
+  },
+  async revisar() {
+    if (!Auth.user || !Auth.sb) { this.set(0); return; }
+    const r = await Auth.sb.from('pedidos').select('numero,estado').then(x => x, () => null);
+    if (!r || r.error || !r.data) return;
+    const actual = {}; r.data.forEach(p => { actual[p.numero] = p.estado; });
+    const visto = this.leer();
+    if (!visto) { this.guardar(actual); this.set(0); return; }   // primera vez en este navegador: no se avisa de lo anterior
+    let n = 0, cambio = false;
+    for (const k in actual) {
+      if (!(k in visto)) { if (actual[k] === 'pendiente') { visto[k] = 'pendiente'; cambio = true; } else n++; }   // pedido recién hecho: no es una novedad hasta que cambie
+      else if (visto[k] !== actual[k]) n++;
+    }
+    if (cambio) this.guardar(visto);
+    this.set(n);
+  },
+  marcarVistos(pedidos) {
+    const m = {}; (pedidos || []).forEach(p => { m[p.numero] = p.estado; });
+    this.guardar(m); this.set(0);
+  },
+  iniciar() {
+    setInterval(() => this.revisar(), 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) this.revisar(); });
+  }
+};
+Avisos.iniciar();
