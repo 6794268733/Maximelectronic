@@ -29,12 +29,17 @@ module.exports = async (req, res) => {
       fotoNombre = `${numero}-${crypto.randomUUID()}.jpg`;
       if (!(await Foto.subir(fotoNombre, bytes, 'resenas').catch(() => false))) return fail(500, 'No se pudo subir la foto. Intentá de nuevo o enviá la reseña sin foto.');
     }
-    // Nombre público: nombre + inicial del apellido (no se publica el mail ni el nombre completo)
-    const full = String(ped.nombre || (user.user_metadata && user.user_metadata.nombre) || '').trim().split(/\s+/).filter(Boolean);
-    const nombre = full.length ? (full.length > 1 ? `${full[0]} ${full[full.length - 1][0].toUpperCase()}.` : full[0]) : 'Cliente';
+    // Nombre público: nombre y apellido tal como los registró el cliente en su cuenta (el mail, el teléfono y el domicilio nunca se publican)
+    const nombre = String((user.user_metadata && user.user_metadata.nombre) || ped.nombre || '').trim().replace(/\s+/g, ' ').slice(0, 80) || 'Cliente';
+    // Número de cliente (correlativo, se asigna al registrarse; ver supabase/numero_cliente.sql). Si todavía no se creó, la reseña se guarda igual sin número.
+    let clienteNumero = null;
+    try {
+      const c = await fetch(`${E.SUPABASE_URL}/rest/v1/clientes?user_id=eq.${encodeURIComponent(user.id)}&select=numero`, { headers: H });
+      if (c.ok) { const a = await c.json(); if (a[0]) clienteNumero = a[0].numero; }
+    } catch (e) { /* sin número */ }
     const ins = await fetch(`${E.SUPABASE_URL}/rest/v1/resenas`, {
       method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ pedido_numero: numero, sku, user_id: user.id, nombre, estrellas, comentario, estado: 'pendiente', ...(fotoNombre ? { foto: fotoNombre } : {}) })
+      body: JSON.stringify({ pedido_numero: numero, sku, user_id: user.id, nombre, estrellas, comentario, estado: 'pendiente', ...(fotoNombre ? { foto: fotoNombre } : {}), ...(clienteNumero ? { cliente_numero: clienteNumero } : {}) })
     });
     if (ins.status === 409) return fail(409, 'Ya dejaste tu reseña de este producto.');
     if (!ins.ok) {

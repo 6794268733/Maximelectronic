@@ -27,8 +27,7 @@ const Store = {
     try {
       if (!CONFIG.SUPABASE_URL) return;
       const get = cols => fetch(`${CONFIG.SUPABASE_URL}/rest/v1/resenas?estado=eq.publicada&select=${cols}&order=creado.desc&limit=500`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
-      let r = await get('sku,nombre,estrellas,comentario,creado,foto');
-      if (!r.ok) r = await get('sku,nombre,estrellas,comentario,creado');   // todavía sin la columna foto
+      let r; for (const cols of ['sku,nombre,estrellas,comentario,creado,foto,cliente_numero', 'sku,nombre,estrellas,comentario,creado,foto', 'sku,nombre,estrellas,comentario,creado']) { r = await get(cols); if (r.ok) break; }   // respaldo si todavía faltan columnas nuevas
       if (r.ok) this.reviews = await r.json();
     } catch (e) { this.reviews = []; }
   },

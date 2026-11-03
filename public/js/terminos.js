@@ -5,7 +5,7 @@
   const tel = C.contacto.tel, mail = C.contacto.mail;
   const titular = CONFIG.RAZON_SOCIAL ? `${CONFIG.RAZON_SOCIAL}${CONFIG.CUIT ? ', CUIT ' + CONFIG.CUIT : ''}` : '';
   C.pages.terminos = ['Términos y condiciones', `
-<p class="text-sm text-neutral-500">Última actualización: 30 de octubre de 2026</p>
+<p class="text-sm text-neutral-500">Última actualización: 3 de noviembre de 2026</p>
 <p>Estos Términos y condiciones regulan el uso del sitio de MAXIMELECTRONIC${titular ? ', cuyo titular es ' + titular : ''} (el “Sitio”), y las compras que hagas en él. Al registrarte o comprar, declarás que los leíste y que los aceptás. Si no estás de acuerdo, te pedimos que no uses el Sitio.</p>
 
 ${h('1. Quiénes pueden usar el Sitio')}
@@ -52,6 +52,7 @@ ${h('10. Garantía')}
 
 ${h('11. Datos personales')}
 <p>Usamos tus datos únicamente para procesar tus pedidos, coordinar los envíos y atenderte, y los tratamos conforme a la Ley 25.326 de Protección de Datos Personales. No vendemos ni cedemos tus datos a terceros, salvo los necesarios para completar tu compra (envío y pagos) o cuando la ley lo exija. En nuestras <a class="underline font-semibold" href="#/info/privacidad">Políticas de privacidad</a> detallamos qué datos tratamos y cómo ejercer tus derechos de acceso, rectificación y supresión.</p>
+<p>Si dejás una reseña, se publica con tu nombre y apellido, tu número de cliente (un número correlativo que se asigna al crear tu cuenta) y la foto que agregues. No publicamos tu mail, teléfono ni domicilio, y podés pedirnos que la retiremos cuando quieras.</p>
 
 ${h('12. Propiedad intelectual y enlaces de terceros')}
 <p>Los textos, logos, imágenes, diseño y código del Sitio son de MAXIMELECTRONIC o de terceros que nos autorizaron su uso, y están protegidos por las leyes de propiedad intelectual. Podés usar el Sitio para tu uso personal; no podés copiar, reproducir, modificar ni distribuir su contenido sin autorización escrita. Las marcas de los productos pertenecen a sus respectivos titulares. Los enlaces o referencias a sitios y marcas de terceros son solo informativos: no implican respaldo y no controlamos esos sitios.</p>

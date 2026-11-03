@@ -125,8 +125,7 @@ module.exports = async (req, res) => {
     // ---- Reseñas: lista y moderación ----
     if (accion === 'resenas') {
       const cols = 'id,pedido_numero,sku,nombre,estrellas,comentario,estado,creado';
-      let r = await fetch(`${R}?select=${cols},foto&order=creado.desc&limit=200`, { headers: H });
-      if (!r.ok) r = await fetch(`${R}?select=${cols}&order=creado.desc&limit=200`, { headers: H });   // todavía sin la columna foto
+      let r; for (const extra of [',foto,cliente_numero', ',foto', '']) { r = await fetch(`${R}?select=${cols}${extra}&order=creado.desc&limit=200`, { headers: H }); if (r.ok) break; }   // respaldo si todavía faltan columnas nuevas
       return r.ok ? res.status(200).json({ ok: true, resenas: await r.json() }) : res.status(500).json({ error: 'No se pudieron leer las reseñas.' });
     }
     if (accion === 'resena_estado') {

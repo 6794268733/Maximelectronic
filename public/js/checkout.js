@@ -111,7 +111,7 @@ const Checkout = {
     if (typeof Avisos !== 'undefined') Avisos.marcarVistos(data);   // se borra el numerito rojo de la cuenta
     const rv = await Auth.sb.from('resenas').select('pedido_numero,sku,estrellas,estado').eq('user_id', Auth.user.id);
     const mias = {}; (rv.data || []).forEach(x => { mias[x.pedido_numero + '|' + x.sku] = x; });
-    const est = { pendiente: 'En revisión', publicada: 'Publicada', oculta: 'No publicada' };
+    const est = { pendiente: 'Enviada', publicada: 'Publicada', oculta: 'No publicada' };
     const resenia = (p, i) => {
       if (p.estado !== 'entregado') return '';
       const x = mias[p.numero + '|' + i.sku];
@@ -136,7 +136,6 @@ const Resenas = {
     <div class="text-sm"><label class="font-semibold">Foto del producto <span class="font-normal text-neutral-500">(opcional)</span></label>
       <input id="rfoto" type="file" accept="image/*" onchange="Resenas.pickFoto(this)" class="mt-1 block w-full text-sm"><div id="rprev" class="mt-2"></div><p id="rferr" class="text-xs text-red-700"></p></div>
     <p id="rerr" class="text-sm text-red-700"></p>
-    <p class="text-xs text-neutral-500">Tu reseña (y tu foto, si la subís) se publica con tu nombre y la inicial del apellido, después de que la revisemos.</p>
     <button id="rbtn" onclick="Resenas.enviar()" class="w-full bg-black text-white rounded-full py-3 font-semibold">Enviar reseña</button></div></div>`;
   },
   // La foto se reduce a máx. 1280 px y se convierte a JPEG en el navegador antes de enviarla
@@ -168,7 +167,7 @@ const Resenas = {
       const r = await fetch('/api/resena', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + Auth.session.access_token }, body: JSON.stringify({ pedido: this.pedido, sku: this.sku, estrellas: this.est, comentario: document.getElementById('rtxt').value, foto: this.foto }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { err.textContent = j.error || 'No se pudo enviar.'; btn.disabled = false; return; }
-      App.close(); alert('¡Gracias! Tu reseña se publicará cuando la revisemos.'); Checkout.loadOrders();
+      App.close(); alert('¡Gracias por tu reseña!'); Checkout.loadOrders();
     } catch (e) { err.textContent = 'No se pudo conectar. Intentá de nuevo.'; btn.disabled = false; }
   }
 };

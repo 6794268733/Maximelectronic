@@ -28,7 +28,8 @@ C.pages = {
   privacidad: ['Políticas de privacidad', `<p>En MAXIMELECTRONIC cuidamos tus datos personales. Esta política explica qué datos pedimos, para qué los usamos y cómo los protegemos.</p>
     <p><b>Qué datos recopilamos.</b> Los que nos das al crear tu cuenta y al comprar: nombre y apellido, mail, teléfono, DNI y domicilio de entrega.</p>
     <p><b>Para qué los usamos.</b> Únicamente para procesar tus pedidos, coordinar el envío, mandarte los comprobantes y avisos de tu compra, y atenderte si nos consultás.</p>
-    <p><b>No divulgamos tu información.</b> No vendemos, alquilamos ni compartimos tus datos con terceros. Solo los usamos con quienes son imprescindibles para completar tu compra, como la empresa de envíos y la plataforma de pagos, y cuando una autoridad competente lo exija por ley.</p>
+    <p><b>No divulgamos tu información.</b> No vendemos, alquilamos ni compartimos tus datos con terceros. Solo los usamos con quienes son imprescindibles para completar tu compra, como la empresa de envíos y la plataforma de pagos, y cuando una autoridad competente lo exija por ley. La única información que se hace pública es la que vos decidís publicar en una reseña.</p>
+    <p><b>Reseñas.</b> Si dejás una reseña, se publica en la tienda con tu nombre y apellido, tu número de cliente y la foto que quieras agregar. Nunca publicamos tu mail, tu teléfono ni tu domicilio. Podés pedirnos en cualquier momento que retiremos tu reseña.</p>
     <p><b>Tus pagos.</b> Los pagos con tarjeta se procesan en la plataforma de pagos. MAXIMELECTRONIC no guarda los datos de tu tarjeta.</p>
     <p><b>Cómo los protegemos.</b> Tomamos medidas razonables para resguardar tu información y que solo acceda a ella el personal autorizado.</p>
     <p><b>Tus derechos.</b> Podés pedirnos en cualquier momento que te mostremos, corrijamos o eliminemos tus datos, escribiéndonos por WhatsApp o por mail. Esta política se rige por la Ley 25.326 de Protección de Datos Personales; la Agencia de Acceso a la Información Pública es el organismo de control.</p>${C.contacto.botones}`],
@@ -117,6 +118,8 @@ C.card = p => `
 C.featured = () => `
 <section class="max-w-7xl mx-auto px-4 py-12"><h2 class="text-2xl font-black mb-6">Productos destacados</h2>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${Store.products.filter(p => p.destacado).slice(0, 8).map(C.card).join('')}</div></section>`;
+// Autor de una reseña: nombre y apellido + número de cliente (8 dígitos, por ejemplo 00000150)
+C.autor = x => C.esc(x.nombre) + (x.cliente_numero ? ' · Cliente Nº ' + String(x.cliente_numero).padStart(8, '0') : '');
 C.fotoResena = (x, cls) => x.foto ? `<a href="${Store.fotoUrl(x.foto)}" target="_blank" rel="noopener"><img src="${Store.fotoUrl(x.foto)}" alt="Foto del producto enviada por ${C.esc(x.nombre)}" loading="lazy" class="${cls}"></a>` : '';
 C.reviews = () => {
   const l = Store.reviews.filter(x => x.comentario && x.estrellas >= 4).slice(0, 3);
@@ -125,7 +128,7 @@ C.reviews = () => {
   return `<section class="grad-dark text-white"><div class="max-w-7xl mx-auto px-4 py-12">
   <div class="flex flex-wrap items-center gap-4 mb-6"><h2 class="text-2xl font-black">Lo que dicen nuestros clientes</h2>
   <span class="text-sm text-neutral-300"><span class="text-amber-400">${C.stars(avg)}</span> ${avg.toFixed(1).replace('.', ',')} · ${Store.reviews.length} ${Store.reviews.length === 1 ? 'opinión' : 'opiniones'}</span></div>
-  <div class="grid md:grid-cols-3 gap-4">${l.map(r => `<div class="glass-card text-black rounded-2xl p-5"><p class="text-amber-500">${C.stars(r.estrellas)}</p><p class="mt-2">${C.esc(r.comentario)}</p>${C.fotoResena(r, 'mt-3 rounded-xl max-h-40 w-full object-cover')}<p class="mt-3 text-sm text-neutral-500">${C.esc(r.nombre)}</p></div>`).join('')}</div>
+  <div class="grid md:grid-cols-3 gap-4">${l.map(r => `<div class="glass-card text-black rounded-2xl p-5"><p class="text-amber-500">${C.stars(r.estrellas)}</p><p class="mt-2">${C.esc(r.comentario)}</p>${C.fotoResena(r, 'mt-3 rounded-xl max-h-40 w-full object-cover')}<p class="mt-3 text-sm text-neutral-500">${C.autor(r)}</p></div>`).join('')}</div>
 </div></section>`;
 };
 C.categories = () => `
@@ -191,7 +194,7 @@ C.modal = p => `
     ${(p.colores || []).length ? `<select id="vc" class="mt-4 w-full border rounded-full px-3 py-2 text-sm">${C.colorOpts(p)}</select>` : ''}
     ${(p.almacenamiento || []).length ? `<select id="va" class="mt-2 w-full border rounded-full px-3 py-2 text-sm">${p.almacenamiento.map(c => `<option>${c}</option>`).join('')}</select>` : ''}
     <button ${p.stock > 0 ? '' : 'disabled'} onclick="App.addModal('${p.sku}')" class="mt-5 w-full rounded-full py-3 font-semibold ${p.stock > 0 ? 'bg-black text-white' : 'bg-neutral-300 text-neutral-500'}">${p.stock > 0 ? 'Agregar al carrito' : 'Sin stock'}</button>
-    ${Store.reviewsOf(p.sku).length ? `<div class="mt-6 border-t pt-4"><p class="font-black text-sm mb-2">Opiniones de clientes</p><div class="space-y-3 max-h-56 overflow-auto">${Store.reviewsOf(p.sku).slice(0, 20).map(x => `<div class="text-sm"><span class="text-amber-500">${C.stars(x.estrellas)}</span> <b>${C.esc(x.nombre)}</b>${x.comentario ? `<p class="text-neutral-600">${C.esc(x.comentario)}</p>` : ''}${C.fotoResena(x, 'mt-1 rounded-lg max-h-28 object-cover')}</div>`).join('')}</div></div>` : ''}
+    ${Store.reviewsOf(p.sku).length ? `<div class="mt-6 border-t pt-4"><p class="font-black text-sm mb-2">Opiniones de clientes</p><div class="space-y-3 max-h-56 overflow-auto">${Store.reviewsOf(p.sku).slice(0, 20).map(x => `<div class="text-sm"><span class="text-amber-500">${C.stars(x.estrellas)}</span> <b>${C.autor(x)}</b>${x.comentario ? `<p class="text-neutral-600">${C.esc(x.comentario)}</p>` : ''}${C.fotoResena(x, 'mt-1 rounded-lg max-h-28 object-cover')}</div>`).join('')}</div></div>` : ''}
   </div></div></div>`;
 C.drawer = () => `
 <div class="fixed inset-0 z-50"><div class="absolute inset-0 bg-black/60" onclick="App.close()"></div>
