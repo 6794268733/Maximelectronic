@@ -148,7 +148,7 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 ## Páginas de información (pie de página)
 - Los textos están en `public/js/components.js`, dentro de `C.pages`. Aceptan HTML simple (`<p>`, `<b>`, enlaces). Los datos de contacto (WhatsApp, mail, horario, ciudad) salen de `public/js/config.js`; `C.contacto.botones` agrega los botones de WhatsApp y mail.
 - Redactadas: Conócenos, Preguntas frecuentes (envío y medios de pago), Contacto, Servicios corporativos, Políticas de privacidad, Condiciones de financiación y Términos y condiciones.
-- Siguen con texto de relleno: Garantías y Servicio técnico.
+- Garantías (garantía oficial del fabricante) redactada. La página "Servicio técnico" se eliminó (alcanza con Contacto).
 
 ## Términos y condiciones y registro
 - El texto completo está en `public/js/terminos.js` (se carga después de `components.js`). Incluye el derecho de arrepentimiento (sección 9, plazo legal de 10 días corridos, art. 34 de la Ley 24.240) y la cláusula del precinto de fábrica abierto (reintegro a valor de reventa). El enlace "Botón de arrepentimiento" ya no está en el pie de página: la Res. 424/2020 pide un enlace de acceso fácil y directo desde la página de inicio; si se quiere volver a ponerlo, agregar `${li('Botón de arrepentimiento', ...)}` en el pie y una página con ese contenido.
@@ -165,3 +165,10 @@ Antes de pagar, el cliente ingresa su código postal y la tienda calcula el cost
 - Cada cuenta recibe un número de cliente correlativo al registrarse (tabla `clientes`, se crea con un trigger en `auth.users`). **Hay que correr una vez `supabase/numero_cliente.sql`** en el SQL Editor: crea la tabla y el trigger, numera las cuentas que ya existían por orden de registro y actualiza las reseñas viejas. Para que el próximo número no empiece en 1 hay una línea opcional comentada dentro del archivo.
 - Las reseñas se muestran como "Nombre Apellido · Cliente Nº 00000150" (inicio, ficha del producto y panel). El nombre sale de la cuenta del cliente. Nunca se publican mail, teléfono ni domicilio. `/api/resena` guarda `cliente_numero` en la reseña; si el SQL todavía no se corrió, la reseña se guarda igual sin número.
 - Como ahora se publica el nombre completo, las Políticas de privacidad y los Términos (sección 11) lo informan.
+
+- Para instalar todo lo de reseñas de una vez (tabla, foto y número de cliente) está `supabase/resenas_completo.sql`: se pega entero en el SQL Editor y se puede correr más de una vez. Si da el error `relation "resenas" does not exist`, es que nunca se había corrido `resenas.sql`: este archivo ya lo incluye.
+
+## Medio de pago, pie de página y Data Fiscal
+- En el checkout la transferencia bancaria / billetera virtual viene primera y preseleccionada; la tarjeta sigue disponible como segunda opción (`C.checkout` en `components.js` y `Checkout.metodo` en `checkout.js`).
+- Pie de página: enlace oficial "Defensa de las y los Consumidores. Para reclamos ingrese aquí" (Res. 274/2021, enlace a la Ventanilla Única Federal). Para el sello de Data Fiscal (Formulario 960/D de ARCA), pegar el código "Script" que genera ARCA en `DATA_FISCAL_HTML` de `public/js/config.js`; vacío = no se muestra.
+- El importador de Excel acepta también la columna `grosor_cm` como tercera medida (equivale a `largo_cm`).

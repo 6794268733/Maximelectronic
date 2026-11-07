@@ -31,7 +31,7 @@ const Checkout = {
   },
   start() {
     this.sel = CONFIG.ENVIO_GRATIS ? { id: 'gratis', carrier: 'Envío gratis', servicio: '', precio: 0, modo: 'domicilio' } : null; this.opts = []; this.foto = ''; this.ubic = null;
-    this.metodo = ['uala', 'mercadopago', 'transferencia'].find(k => CONFIG.PAYMENTS[k]) || '';
+    this.metodo = ['transferencia', 'uala', 'mercadopago'].find(k => CONFIG.PAYMENTS[k]) || '';
     if (!Store.cart.length) return;
     if (!Auth.user) return Auth.modal('registro', () => Checkout.form());
     this.form();

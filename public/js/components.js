@@ -16,7 +16,6 @@ C.pages = {
       <li><b>Horario de atención:</b> ${CONFIG.HOURS}</li>
       <li><b>Ubicación:</b> ${CONFIG.CITY}</li>
     </ul>${C.contacto.botones}`],
-  servicio: ['Servicio técnico', 'Texto de ejemplo: completá con la información de tu servicio técnico.'],
   corporativo: ['Servicios corporativos', `<p>Si tu empresa necesita comprar <b>más de cinco productos</b>, comunicate con nosotros por WhatsApp o por mail y te informamos los descuentos disponibles.</p>
     <p>Contanos qué productos y qué cantidad necesitás, y te respondemos a la brevedad con una propuesta.</p>${C.contacto.botones}`],
   acerca: ['Conócenos', `<p>MAXIMELECTRONIC es una tienda online de tecnología de alta gama ubicada en Puerto Iguazú, Misiones.</p>
@@ -36,7 +35,11 @@ C.pages = {
   financiacion: ['Condiciones de financiación', `<p>Si no contás con el efectivo completo o no tenés tarjeta de crédito, podés acceder a una financiación a través de plataformas de crédito personal.</p>
     <p>La financiación está sujeta a la aprobación de la plataforma elegida. Las tasas, los plazos y los requisitos los define cada plataforma, no MAXIMELECTRONIC.</p>
     <p>Si querés más información, escribinos y te orientamos.</p>${C.contacto.botones}`],
-  garantias: ['Garantías', 'Texto legal de ejemplo: reemplazar por el texto oficial.']
+  garantias: ['Garantías', `<p>Todos los productos que vendemos en MAXIMELECTRONIC cuentan con <b>garantía oficial del fabricante</b>.</p>
+    <p><b>Plazos y condiciones:</b> los define cada fabricante y figuran en el certificado de garantía o en la documentación que viene dentro de la caja. Esto es sin perjuicio de la garantía legal que te corresponde como consumidor (Ley 24.240).</p>
+    <p><b>Cómo hacer un reclamo:</b> escribinos por WhatsApp o por mail con tu nombre, el número de pedido y una descripción de la falla, y te indicamos cómo seguir, normalmente a través del servicio técnico oficial de cada marca. Conservá el comprobante de compra y el embalaje original.</p>
+    <p><b>Qué puede no cubrir:</b> según lo que establezca cada fabricante, la garantía puede no cubrir daños por golpes, líquidos, mal uso o reparaciones hechas por terceros no autorizados.</p>
+    <p>Si el producto llega con una falla o distinto de lo que compraste, escribinos de inmediato y lo resolvemos.</p>${C.contacto.botones}`]
 };
 C.header = () => `
 <div class="bg-orange-500 text-white text-center text-xs sm:text-sm font-black tracking-wide py-2 px-4">${CONFIG.STOCK_NOTICE}</div>
@@ -88,7 +91,7 @@ C.hero = () => `
 </section>`;
 C.benefits = () => `
 <section class="grad-light border-b border-neutral-200"><div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-sm">
-  ${[['headset', 'Asesoría remota', 'Comprá desde todo el país, sin moverte de tu casa'], ['shield-check', 'Seguridad', 'Tus datos personales protegidos'], ['badge-check', 'Garantía', 'Gestioná tu garantía en nuestro servicio técnico'], ['layout-grid', 'Catálogo', 'La mayor variedad de tecnología de alta gama']]
+  ${[['headset', 'Asesoría remota', 'Comprá desde todo el país, sin moverte de tu casa'], ['shield-check', 'Seguridad', 'Tus datos personales protegidos'], ['badge-check', 'Garantía', 'Garantía oficial del fabricante en todos los productos'], ['layout-grid', 'Catálogo', 'La mayor variedad de tecnología de alta gama']]
     .map(b => `<div><i data-lucide="${b[0]}" class="mx-auto mb-2"></i><p class="font-semibold">${b[1]}</p><p class="text-neutral-500">${b[2]}</p></div>`).join('')}
 </div></section>`;
 C.pct = p => p.precio_lista > p.precio_final ? Math.round((1 - p.precio_final / p.precio_lista) * 100) : 0;
@@ -156,10 +159,10 @@ C.footer = () => {
   <div><p class="text-white font-black text-lg">MAXIM<span class="font-light">ELECTRONIC</span></p>
     <div class="flex gap-3 mt-4">${Object.keys(icons).map(k => `<a ${CONFIG.SOCIAL[k] ? `href="${CONFIG.SOCIAL[k]}" target="_blank" rel="noopener"` : 'class="opacity-30 pointer-events-none"'} aria-label="${k}"><i data-lucide="${icons[k]}"></i></a>`).join('')}</div></div>
   <div><p class="text-white font-semibold mb-2">Información</p><p>${CONFIG.HOURS}</p><p>${CONFIG.ADDRESS || 'Puerto Iguazú, Misiones'}</p><p>WhatsApp +54 375 4400392</p>${CONFIG.EMAIL ? `<p>${CONFIG.EMAIL}</p>` : ''}${CONFIG.RAZON_SOCIAL ? `<p>${CONFIG.RAZON_SOCIAL}${CONFIG.CUIT ? ' · CUIT ' + CONFIG.CUIT : ''}</p>` : ''}</div>
-  <div><p class="text-white font-semibold mb-2">Ayuda</p><ul class="space-y-1">${li('Conócenos', 'acerca')}${li('Preguntas frecuentes', 'faq')}${li('Contacto', 'contacto')}${li('Servicio técnico', 'servicio')}${li('Servicios corporativos', 'corporativo')}</ul></div>
+  <div><p class="text-white font-semibold mb-2">Ayuda</p><ul class="space-y-1">${li('Conócenos', 'acerca')}${li('Preguntas frecuentes', 'faq')}${li('Contacto', 'contacto')}${li('Servicios corporativos', 'corporativo')}</ul></div>
   <div><p class="text-white font-semibold mb-2">Legales</p><ul class="space-y-1">${li('Términos y condiciones', 'terminos')}${li('Políticas de privacidad', 'privacidad')}${li('Condiciones de financiación', 'financiacion')}${li('Garantías', 'garantias')}</ul></div>
   </div>
-  <div class="border-t border-neutral-800 text-center text-xs py-5">Pagá con Visa · Mastercard · American Express · Cabal · Naranja &nbsp;|&nbsp; Envíos a todo el país &nbsp;|&nbsp; Sellos Data Fiscal y Defensa del Consumidor (agregar)</div></footer>`;
+  <div class="border-t border-neutral-800 text-center text-xs py-5">Pagá con Visa · Mastercard · American Express · Cabal · Naranja &nbsp;|&nbsp; Envíos a todo el país &nbsp;|&nbsp; <a class="underline" href="https://www.argentina.gob.ar/defensadelconsumidor" target="_blank" rel="noopener">Defensa de las y los Consumidores. Para reclamos ingrese aquí</a>${CONFIG.DATA_FISCAL_HTML ? `<div class="mt-3 flex justify-center">${CONFIG.DATA_FISCAL_HTML}</div>` : ''}</div></footer>`;
 };
 C.home = () => C.hero() + C.benefits() + C.featured() + C.reviews() + C.categories() + C.location();
 C.catalog = (cat, q) => {
@@ -273,7 +276,7 @@ C.checkout = () => {
     <div id="sucwrap"></div></div>`}
   <div class="text-sm space-y-2"><p class="font-semibold">Medio de pago</p>
     ${[['uala', 'Tarjeta de crédito o débito (cualquier banco)' + (Number(CONFIG.CUOTAS_MAX) > 1 ? ' · hasta ' + Number(CONFIG.CUOTAS_MAX) + ' cuotas' : '') + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · +' + Number(CONFIG.RECARGO_TARJETA_PCT) + '% de recargo (incluye el costo de las cuotas)' : '')], ['mercadopago', 'Billetera virtual, transferencia, tarjeta o efectivo (Pago Fácil / Rapipago)'], ['transferencia', 'Transferencia bancaria / billetera virtual' + (Number(CONFIG.RECARGO_TARJETA_PCT) > 0 ? ' · precio sin recargo' : '')]]
-      .filter(([k]) => P[k]).map(([k, t], i) => `<label class="flex gap-2"><input type="radio" name="metodo" value="${k}" ${i === 0 ? 'checked' : ''} onchange="Checkout.setMetodo(this.value)"> ${t}</label>`).join('')}</div>
+      .filter(([k]) => P[k]).sort((a, b) => (b[0] === 'transferencia') - (a[0] === 'transferencia')).map(([k, t], i) => `<label class="flex gap-2"><input type="radio" name="metodo" value="${k}" ${i === 0 ? 'checked' : ''} onchange="Checkout.setMetodo(this.value)"> ${t}</label>`).join('')}</div>
   <div id="ctot" class="space-y-1 border-t pt-3">${C.totales()}</div>
   <label class="flex gap-2 text-xs text-neutral-600"><input type="checkbox" name="guardar" checked> Guardar estos datos en mi cuenta para mis próximos pedidos</label>
   <p id="cerr" class="text-sm text-red-700"></p>

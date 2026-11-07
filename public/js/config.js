@@ -4,6 +4,8 @@ window.CONFIG = {
   OWNER: 'Cristian Wrubel',
   RAZON_SOCIAL: 'Cristian Wrubel',      // titular de la tienda (se muestra en el pie de página y en los Términos y condiciones)
   CUIT: '20-35006000-7',
+  // Data Fiscal (Formulario 960/D de ARCA): pegá entre las comillas el código "Script" que te da ARCA para tu sitio (empieza con <a href="http://qr.afip.gob.ar/...). Vacío = no se muestra.
+  DATA_FISCAL_HTML: '',
   WHATSAPP: '543754400392',            // formato internacional sin + ni espacios
   CITY: 'Puerto Iguazú, Misiones, Argentina',
   ADDRESS: '',                          // completar con la dirección exacta: el mapa se actualiza solo
