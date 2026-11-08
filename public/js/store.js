@@ -11,7 +11,7 @@ const Store = {
         const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/productos?select=*&order=sku`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
         if (!r.ok) throw new Error('db');
         const j = await r.json();
-        if (j.length) rows = j;
+        rows = j;   // si la base responde, manda ella (aunque esté vacía); el archivo de ejemplo solo se usa si la base falla
       }
       if (!rows) {
         const r2 = await fetch(CONFIG.CATALOG_URL, { cache: 'no-store' });
