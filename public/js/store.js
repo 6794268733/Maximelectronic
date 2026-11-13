@@ -97,3 +97,23 @@ const Store = {
   };
   if (!instalar()) { let n = 0; const t = setInterval(() => { if (instalar() || ++n > 80) clearInterval(t); }, 100); }
 })();
+
+// Carrusel del inicio: si un slide no tiene productos propios (por ejemplo, ninguno marcado como destacado u oferta),
+// muestra productos con foto y en stock, distintos en cada slide, para que siempre pasen imágenes de productos.
+(function () {
+  const instalar = () => {
+    if (typeof C === 'undefined' || typeof Store === 'undefined' || !C.slideProducts || C.slideProducts.__fb) return false;
+    const orig = C.slideProducts;
+    C.slideProducts = function (s) {
+      const h = orig.apply(this, arguments);
+      if (h || !s.prod) return h;   // slide con prod vacío (prod: ''): sin productos, solo la foto de fondo
+      const con = (Store.products || []).filter(p => p.imagen && !(p.stock <= 0));
+      if (!con.length) return '';
+      const i = Math.max(0, (C.slides || []).indexOf(s));
+      const pick = [0, 1, 2].map(k => con[(i * 3 + k) % con.length]).filter((p, k, a) => a.indexOf(p) === k);
+      return orig.call(this, { prod: pick.map(p => p.sku) });
+    };
+    C.slideProducts.__fb = true; return true;
+  };
+  if (!instalar()) { let n = 0; const t = setInterval(() => { if (instalar() || ++n > 80) clearInterval(t); }, 50); }
+})();
