@@ -26,12 +26,12 @@ window.CONFIG = {
   // Carrusel del inicio. prod = productos con foto que se muestran en ese slide: 'destacados', 'ofertas', el nombre de una categoría (ej. 'Drones') o una lista de SKUs (['EJ-001','EJ-009']). Se toman de las fotos cargadas en el Excel (imagen_principal).
   // t = título, s = subtítulo, b = texto del botón, l = a dónde lleva, img = enlace de la foto de fondo (opcional).
   // Si img queda vacío, se ve el fondo gris de siempre. Foto recomendada: horizontal, unos 1920x800 px, JPG de menos de 300 KB.
-  SLIDES: [
-    { t: 'Tecnología de alta gama', s: 'Celulares, notebooks, drones y más', l: '#/catalogo/ofertas', b: 'Ver ofertas', g: 'grad-dark', prod: 'destacados', img: '' },
-    { t: 'Drones que llegan más alto', s: 'Nueva categoría con cámara 4K, 5K y 6K', l: '#/catalogo/Drones', b: 'Ver drones', g: 'grad-mid', prod: 'Drones', img: '' },
-    { t: 'Comprá online, sin vueltas', s: 'Registrate, elegí tus productos y pagá desde la web', l: '#/catalogo/todos', b: 'Ver catálogo', g: 'grad-dark', prod: 'ofertas', img: '' },
-    { t: 'Envíos a todo el país', s: 'Comprá desde donde estés, con asesoría remota', l: '#/info/contacto', b: 'Consultar', g: 'grad-mid', prod: 'Notebooks', img: '' },
-    { t: 'Audio HiFi y auriculares', s: 'Sonido de otro nivel', l: '#/catalogo/Audio HiFi', b: 'Ver audio', g: 'grad-dark', prod: 'Audio HiFi', img: '' }
+   SLIDES: [
+    { t: 'Drones que llegan más alto', s: 'Cámara 4K, 5K y 6K', l: '#/catalogo/Drones', b: 'Ver drones', g: 'grad-dark', prod: '', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsnECVEznitHRyA5TB1yiiQ3DOaad8Jkflykx9FfADmw&s=10' },
+    { t: 'Los mejores celulares', s: 'Las últimas marcas y modelos', l: '#/catalogo/Celulares', b: 'Ver celulares', g: 'grad-mid', prod: '', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR57xjqjLBLWt-soqtHPi44PdKcGjKLuFgWfhfqOzvk7A&s=10' },
+    { t: 'Sonido de otro nivel', s: 'Parlantes y equipos de música', l: '#/catalogo/Audio HiFi', b: 'Ver audio', g: 'grad-dark', prod: '', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQh3A6LkeNPEOafVvkqPkJLZDcjzKCDbLPwoKZh4-nBzrITaJIx_-t_SHUL&s=10, https://blikstore.com/cdn/shop/articles/BLOG_2.jpg?v=1741805833&width=2048' },
+    { t: 'Movete eléctrico', s: 'Monopatines eléctricos', l: '#/catalogo/todos', b: 'Ver catálogo', g: 'grad-mid', prod: '', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3TDX38GuBWyj_4GTU1uPwQ7SZoe3ojQBuU4Le94LzfIg_Gxn1d2OwdCkQ&s=10' },
+    { t: 'Climatizá tu casa', s: 'Aires acondicionados', l: '#/catalogo/todos', b: 'Ver catálogo', g: 'grad-dark', prod: '', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZI-loVSimhIn5kGr3URuSJDkqyFGAlpjjzH-YS8wOvw&s=10, https://tn.com.ar/resizer/v2/trucos-y-consejos-para-gastar-menos-energia-con-el-aire-acondicionado-foto-adobestock-MRZ76UU76FBFJGISJVXS2EELXQ.png?auth=b9345a05fd310ed9132a9a03617faf0d69bdeb802ff469818d013a54f7451512&width=767' }
   ],
   // Supabase: Settings > API en tu proyecto. Pegá la URL y la clave "anon public" (la pública; NUNCA la "service_role").
   SUPABASE_URL: 'https://axfupcpkwoymlfabxxkt.supabase.co',        // ejemplo: 'https://abcdefgh.supabase.co'
