@@ -26,12 +26,10 @@ const Store = {
   async loadReviews() {
     try {
       if (!CONFIG.SUPABASE_URL) return;
-      const get = cols => fetch(`${CONFIG.SUPABASE_URL}/rest/v1/resenas?estado=eq.publicada&select=${cols}&order=creado.desc&limit=500`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
-      let r; for (const cols of ['sku,nombre,estrellas,comentario,creado,foto,cliente_numero', 'sku,nombre,estrellas,comentario,creado,foto', 'sku,nombre,estrellas,comentario,creado']) { r = await get(cols); if (r.ok) break; }   // respaldo si todavía faltan columnas nuevas
+      const r = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/resenas?estado=eq.publicada&select=sku,nombre,estrellas,comentario,creado&order=creado.desc&limit=500`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY } });
       if (r.ok) this.reviews = await r.json();
     } catch (e) { this.reviews = []; }
   },
-  fotoUrl(n) { return n ? `${CONFIG.SUPABASE_URL}/storage/v1/object/public/resenas/${encodeURIComponent(n)}` : ''; },
   reviewsOf(sku) { return this.reviews.filter(x => x.sku === sku); },
   rating(sku) { const l = this.reviewsOf(sku); return { n: l.length, avg: l.length ? l.reduce((a, x) => a + x.estrellas, 0) / l.length : 0 }; },
   cats() { return [...new Set(this.products.map(p => p.categoria).filter(Boolean))]; },
@@ -67,3 +65,35 @@ const Store = {
     return `Hola ${CONFIG.STORE_NAME}, quiero hacer este pedido:\n${l.join('\n')}\nTotal: ${this.fmt(this.total())}`;
   }
 };
+
+// Galería de imágenes extra (columna imagenes_extra): foto grande + miniaturas en la ficha del producto.
+// Acepta enlaces separados por coma, punto y coma, espacio o salto de línea.
+(function () {
+  const urls = p => [].concat((p && p.imagenes) || []).flatMap(x => String(x).split(/[\s,;|]+/)).filter(u => /^https?:\/\//i.test(u));
+  const instalar = () => {
+    if (typeof App === 'undefined' || typeof Store === 'undefined' || !App.open || App.open.__gal) return false;
+    const orig = App.open;
+    App.open = function (sku) {
+      const r = orig.apply(this, arguments);
+      try {
+        const p = Store.find(sku), ex = urls(p), img = document.querySelector('#overlay img');
+        if (!ex.length || !img) return r;
+        const todas = [p.imagen, ...ex].filter((u, i, a) => u && a.indexOf(u) === i);
+        const w = document.createElement('div'), fila = document.createElement('div');
+        fila.className = 'flex flex-wrap gap-2 p-2';
+        img.replaceWith(w); w.appendChild(img); w.appendChild(fila);
+        todas.forEach(u => {
+          const m = document.createElement('img');
+          m.src = u; m.loading = 'lazy'; m.alt = 'Otra foto de ' + (p.nombre || 'producto');
+          m.className = 'h-14 w-14 object-cover rounded-lg cursor-pointer border';
+          m.onclick = () => { img.src = u; };
+          m.onerror = () => m.remove();   // si un enlace no carga, no deja un hueco roto
+          fila.appendChild(m);
+        });
+      } catch (e) { console.error('galería', e); }
+      return r;
+    };
+    App.open.__gal = true; return true;
+  };
+  if (!instalar()) { let n = 0; const t = setInterval(() => { if (instalar() || ++n > 80) clearInterval(t); }, 100); }
+})();
